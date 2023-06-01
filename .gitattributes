@@ -9,3 +9,8 @@
 *.bib linguist-detectable=false
 *.bib linguist-language=TeX
 *.bib linguist-documentation=false
+
+
+*.rtf linguist-detectable=false
+*.rtf linguist-language=TeX
+*.rtf linguist-documentation=false
