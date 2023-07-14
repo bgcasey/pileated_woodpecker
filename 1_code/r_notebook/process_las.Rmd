@@ -1,0 +1,84 @@
+
+```{r eval=FALSE}
+library(lidR)
+library(sf)
+```
+
+# Process LAS/LAZ files
+
+```{r}
+las<-readLAS("0_data/external/Spatial/ABMI/LiDAR/LAZ/373_6165.laz")
+
+# create a study are based on point cloud
+bb<-st_bbox(las)
+aoi<-st_as_sfc(st_bbox(bb))
+# shrink aoi]
+aoi2<-st_buffer(aoi, -450)
+# aoi2<-st_as_sf(aoi2)
+aoi_bb<-st_bbox(aoi2)
+
+#crop las by aoi
+las2<-clip_roi(las, aoi2)
+
+# view classifications
+unique(las2$Classification)
+# 2, 1, 7
+
+# filter out ground points and noise
+las3<-filter_poi(las2, Classification == 1)
+unique(las3$Classification)
+# 1
+
+
+## Normalize las
+# 1 filter out ground points
+gnd <- filter_ground(las2)
+# plot(gnd, size = 3, bg = "white", color = "Classification")
+
+# Create a dtm
+dtm <- rasterize_terrain(las, 1, knnidw())
+plot(dtm, col = gray(1:50/50))
+
+# 3 normalize point cloud by subtracting DEM
+nlas <- las - dtm
+plot(nlas, size = 8, bg = "white")
+
+# filter out ground points and noise
+nlas_v<-filter_poi(nlas, Classification == 1)
+unique(nlas_v$Classification)
+
+
+
+## generate metrics
+# met<-grid_metrics(nlas_v, func = .stdmetrics_z, res=5)
+
+met<-pixel_metrics(nlas_v, func = .stdmetrics_z, res=5)
+
+
+# custom metrics
+library(moments)
+##Define function for metrics
+f <- function(z) {
+  list(
+    zmean = mean(z), 
+    zsd = sd(z),
+    # zcv = sd(z)/mean(z)*100,
+    zmax = max(z),
+    zskew = skewness(z),
+    zkurt = kurtosis(z),
+    zentropy = entropy(z),
+    zq50 = quantile(z, 0.5),
+    zq95 = quantile(z, 0.95),
+    pzabovezmean = sum(z>mean(z))/length(z)*100,
+    pzabovez3 = sum(z>3)/length(z)*100,
+    pz_0_to_1 = sum(0<z & z<=1)/length(z)*100,
+    pz_0_to_3 = sum(0<=z & z<=3)/length(z)*100,
+    pz_1_to_3 = sum(1<z & z<=3)/length(z)*100,
+    pz_3_to_5 = sum(3<z & z<=5)/length(z)*100
+    )
+}
+
+m <- pixel_metrics(nlas_v, func = ~f(Z), res=1)
+
+```
+
