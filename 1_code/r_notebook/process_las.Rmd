@@ -25,7 +25,11 @@ unique(las2$Classification)
 # 2, 1, 7
 
 # filter out ground points and noise
-las3<-filter_poi(las2, Classification == 1)
+las3<-filter_poi(las2, Classification != 2)
+
+# filter out noise
+las3<-filter_poi(las2,Classification != 2, Classification != 7, Classification != 18)
+
 unique(las3$Classification)
 # 1
 
@@ -56,25 +60,26 @@ met<-pixel_metrics(nlas_v, func = .stdmetrics_z, res=5)
 
 
 # custom metrics
-library(moments)
-##Define function for metrics
+# library(moments) # for skewness, kurtosis, and entropy
+
+##Define functions for metrics
 f <- function(z) {
   list(
     zmean = mean(z), 
     zsd = sd(z),
     # zcv = sd(z)/mean(z)*100,
     zmax = max(z),
-    zskew = skewness(z),
-    zkurt = kurtosis(z),
-    zentropy = entropy(z),
+    # zskew = skewness(z),
+    # zkurt = kurtosis(z),
+    # zentropy = entropy(z),
     zq50 = quantile(z, 0.5),
     zq95 = quantile(z, 0.95),
     pzabovezmean = sum(z>mean(z))/length(z)*100,
     pzabovez3 = sum(z>3)/length(z)*100,
     pz_0_to_1 = sum(0<z & z<=1)/length(z)*100,
-    pz_0_to_3 = sum(0<=z & z<=3)/length(z)*100,
-    pz_1_to_3 = sum(1<z & z<=3)/length(z)*100,
-    pz_3_to_5 = sum(3<z & z<=5)/length(z)*100
+    # pz_0_to_3 = sum(0<=z & z<=3)/length(z)*100,
+    pz_1_to_3 = sum(1<z & z<=3)/length(z)*100
+    # pz_3_to_5 = sum(3<z & z<=5)/length(z)*100
     )
 }
 

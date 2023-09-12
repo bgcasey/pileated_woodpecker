@@ -1,0 +1,246 @@
+
+# Make spatial predictions
+
+Use fitted the JAGS model and a stack of predicor rasters to generate a n predictive map
+
+
+## Posterior samples from fitted JAGS model
+
+To obtain the posterior samples from the fitted JAGS model in R, you can use the coda.samples function from the rjags package. The coda.samples function performs posterior simulation (MCMC) and returns the posterior samples for specified model parameters. Here's how you can get the posterior samples:
+
+
+```{r}
+library(rjags)
+library(readr)
+Master_data <- read_csv("0_data/external/Austin_Zeller/code/PIWO_Bayesian_Model_Comparison-main/Master_data.csv")
+
+# load jags model
+load("0_data/external/Austin_Zeller/models/modelsimple.Rdata")
+
+# draws_use_poi is the posterior sample of the poisson model
+
+test<-rawuse_poi[[1]]
+```
+
+
+create a lat long raster
+
+load rasters and clip to area of interest
+
+```{r}
+library(raster)
+library(sf)
+
+nfis<-raster::stack("/Volumes/Projects/pileated_woodpecker_lidar/0_data/external/lionel/2_outputs/stackHardBuffer150-565-1000-Austin.tif")
+
+# rename layers of raster stack to match the variable names used in Austin's models
+
+#remove unused bands
+# Specify the indices of the bands you want to remove
+# For example, if you want to remove bands 2, 4, and 6:
+bands_to_remove <- c(16, 17, 18)
+
+# Use negative indexing to exclude the bands you want to remove
+selected_bands <- setdiff(1:18, bands_to_remove)
+
+nfis_2 <- nfis[[selected_bands]]
+names(nfis_2)
+
+new_names <- c("N_biomass_150", "N_biomass_565", "N_biomass_1000", "N_decid_150", "N_decid_565", "N_decid_1000", "N_age_150", "N_age_565", "N_age_1000", "N_volume_150", "N_volume_565", "N_volume_1000", "N_height_150", "N_height_565", "N_height_1000") 
+
+# Add new names for all bands
+names(nfis_2) <- new_names
+
+aoi<-st_read("/Volumes/Projects/pileated_woodpecker_lidar/0_data/external/Spatial/CanadianNatural/17324_Pathways_GlobalRaymac/Shapefiles/17324_ProjectBoundary_nad83_csrs_z12.shp")
+
+load("0_data/external/Spatial/callinglake/studyarea_big.rData")
+aoi<-c_bb
+
+aoi2<- st_transform(aoi, crs = crs(nfis_2))
+raster_data_projected <- projectRaster(nfis_2, crs = crs(aoi))
+
+
+#clip raster to study area
+nfis_crop<-crop(nfis_2, aoi2)
+nfis_crop<-stack(nfis_crop)
+writeRaster(nfis_crop, "0_data/manual/spatial/nfis_clop_callinglake.tif", format = "raster")
+nfis_crop<-stack("0_data/manual/spatial/nfis_clop_callinglake.grd")
+
+writeRaster(nfis_crop,"0_data/manual/spatial/nfis_crop_pipeline.grd", format="raster")
+nfis_crop<-stack("0_data/manual/spatial/nfis_crop_pipeline.grd")
+
+
+
+# Prepare the grid for predictive raster
+# Define the resolution of the grid (adjust as needed)
+resolution <- 1000  # Change this to the desired resolution in meters
+
+# Create a raster layer representing the prediction grid
+grid_raster <- raster(aoi2, res = resolution)
+
+predictor_data <- raster::extract(nfis_crop, grid_raster)
+
+
+predictor_data <- lapply(nfis_crop, function(r) extract(r, grid_raster))
+
+
+
+# Create a grid of prediction points within the study area raster
+prediction_points <- raster::rasterToPoints(grid_raster)
+# Extract latitude and longitude coordinates
+latitude <- prediction_points[, "y"]
+longitude <- prediction_points[, "x"]
+coords_matrix <- cbind(longitude, latitude)
+
+
+predictor_data <- data.frame(extract(nfis_2, prediction_points))
+                             # Repeat the extraction for all predictor variables used in the occupancy model
+
+
+# 
+# prediction_points_spdf <- as(prediction_points, "SpatialPointsDataFrame")
+# 
+# 
+# 
+# 
+# 
+# # Extract predictor variable values:
+# predictor_data2<-extract(nfis_2, prediction_points)
+# predictor_data3<-cbind(predictor_data2, coords_matrix)
+
+
+
+
+
+
+
+nfis_crop_aggregate<- aggregate(nfis_crop, fact=50)
+res(nfis_crop_aggregate)
+
+nfis_crop_aggregate<-nfis_crop
+#create latitude and longitude bands
+longitude <- init(nfis_crop_aggregate, 'x')
+names(longitude)<-"longitude"
+latitude <- init(nfis_crop_aggregate, 'y')
+names(latitude)<-"latitude"
+
+nfis_crop_aggregate_2<-stack(nfis_crop_aggregate, longitude, latitude)
+
+prediction_grid <- raster(nfis_crop_aggregate)
+# Extract predictor variable values from 'nfis_crop_aggregate' raster stack to the prediction grid
+predictor_data <- extract(nfis_crop_aggregate_2, prediction_grid)
+
+predictor_data <- lapply(1:nlayers(nfis_crop_aggregate_2), function(i) {
+  extract(nfis_crop_aggregate_2[i], prediction_grid)
+})
+
+predictor_data <- stackApply(nfis_crop_aggregate_2, indices = 1:nlayers(nfis_crop_aggregate_2), fun = function(x) extract(x, prediction_grid))
+
+predictor_data <- stackApply(nfis_crop_aggregate, indices = 1:nlayers(nfis_crop_aggregate), fun = function(x) extract(x, prediction_grid, na.rm = TRUE))
+
+predictor_data<-nfis_crop_aggregate_2
+
+
+
+coda_samples<-rawuse_poi[5]
+predict_occ_prob <- function(predictor_data, model_samples) {
+  # Define an empty matrix to store predicted probabilities for all samples
+  n_samples <- nrow(model_samples)
+  n_cells <- length(predictor_data)
+  predicted_probabilities <- matrix(NA, n_samples, n_cells)
+
+  # Loop through each posterior sample
+  for (i in 1:n_samples) {
+    # Get model parameters for the current sample
+    current_params <- model_samples[i, ]
+    
+    # Loop through each cell and make predictions using the current sample
+    for (j in 1:n_cells) {
+      predicted_probabilities[i, j] <- predict_occ_prob_single(predictor_data[[j]], current_params)
+    }
+  }
+
+  return(predicted_probabilities)
+}
+
+
+predict_occ_prob_single <- function(predictor_data, model_params) {
+  # Implement your prediction logic here using the predictor_data and model_params
+  # For example, you could use a linear combination of predictor variables and model coefficients
+  # to compute the occupancy probability for the cell.
+  # Replace the following line with your actual prediction logic:
+  predicted_prob <- sum(predictor_data * model_params)
+  
+  return(predicted_prob)
+}
+
+test<-predict_occ_prob_single(predictor_data, model_samples)
+
+
+predicted_probabilities <- predict_occ_prob(predictor_data = predictor_data, model_samples = model_samples)
+
+
+
+```
+
+
+```{r}
+
+https://github.com/adammwilson/SpatialAnalysisTutorials/blob/3f0da4a884bf3b147c4a228e469e81d3de6aa64c/workflow/Solitary_Tinamou/Tinamou.Rmd#L16
+
+## First subset area to speed up predictions
+
+
+## if you want to make predictions for the full grid, run this line:
+penv=predictor_data
+
+## Calculate posterior estimates of p(occurrence) for each cell
+## This extracts the posterior coefficients, performs the regression, 
+## calculates the quantiles, and takes the inverse logit to get p(occurrence)
+
+## niter will use a reduced number of posterior samples to generate the summaries
+pred=calc(penv,function(x,niter=30) {
+  mu1=apply(apply(rawocc[[5]][1:niter,],1,function(y) y*c(1,x)),2,sum,na.rm=T)
+  mu2=quantile(mu1,c(0.025,0.5,0.975),na.rm=T)  
+  p=1/(1+exp(-mu2))
+  return(p)
+})
+names(pred)=c("Lower_CI_2.5","Median","Upper_CI_97.5")
+## Write out the predictions
+writeRaster(pred,file="Prediction.tif",overwrite=T)
+
+
+
+pred <- calc(penv, function(x, niter = 30) {
+  # Extract model parameters for 'niter' samples
+  n_samples <- min(niter, nrow(rawocc[[5]]))
+  model_params <- rawocc[[5]][1:n_samples, ]
+  
+  # Compute the linear combinations for each cell and each sample
+  mu1 <- apply(model_params, 1, function(y) y * c(1, x))
+  mu1 <- rowSums(mu1, na.rm = TRUE)
+  
+  # Calculate quantiles for the predictive distribution
+  mu2 <- quantile(mu1, c(0.025, 0.5, 0.975), na.rm = TRUE)
+  
+  # Transform the linear combinations to probabilities using the link function (logit)
+  p <- 1 / (1 + exp(-mu2))
+  return(p)
+})
+names(pred) <- c("Lower_CI_2.5", "Median", "Upper_CI_97.5")
+
+```
+
+
+
+
+
+
+```{r}
+library(spTimer)
+
+spTimer::plot.spT(draws_use_poi[[1]])
+
+
+```
+

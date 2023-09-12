@@ -38,7 +38,7 @@ AZ_PIWO_xy<-AZ_PIWO%>%
 save(AZ_PIWO_xy, file="0_data/manual/ss_data/spatial/AZ_PIWO_xy.rData")
 
 # save as shapefile
-# st_write(AZ_PIWO_xy, "0_data/manual/ss_data/spatial/AZ_PIWO_xy.shp")
+st_write(AZ_PIWO_xy, "0_data/manual/ss_data/spatial/AZ_PIWO_xy.shp")
 ```
 
 ### FMWIS
@@ -87,13 +87,13 @@ save(SB_PIWO_xy, file="0_data/manual/ss_data/spatial/SB_PIWO_xy.rData")
 
 ```{r eval=FALSE}
 # ss_xy<-rbind(AZ_PIWO_xy, FWMIS_PIWO_xy, SB_PIWO_xy)
-ss_xy<-rbind(FWMIS_PIWO_xy, SB_PIWO_xy)
+ss_xy<-rbind(FWMIS_PIWO_xy, SB_PIWO_xy, AZ_PIWO_xy)
 
 # save as spatial data frame
 save(ss_xy, file="0_data/manual/ss_data/spatial/ss_xy.rData")
 
 # save as shapefile
-st_write(ss_xy, "0_data/manual/ss_data/spatial/ss_xy.shp", delete_dsn = TRUE)
+st_write(ss_xy, "0_data/manual/ss_data/spatial/ss_xy_2013_07_14.shp", delete_dsn = TRUE)
 ```
 
 
