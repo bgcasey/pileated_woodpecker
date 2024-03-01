@@ -10,6 +10,7 @@
 ##Load packages----
 library(lidR)
 library(sf)
+library(terra) #to work with the output rasters
 # library(moments) # for calcluating skewness, kurtosis, and entropy
 
 ##Import data----
@@ -65,6 +66,14 @@ unique(nlas_v$Classification)
 ## standard metrics ----
 ## Creates a SpatRaster with standard metrics
 met<-pixel_metrics(nlas_v, func = .stdmetrics_z, res=5)
+met1<-pixel_metrics(nlas_v, func = .stdmetrics, res=10)
+
+
+# Compute summary statistics
+stats <- global(met1$pzabovezmean, fun = c("mean", "min", "max", "sd"))
+# Print the statistics
+print(stats)
+
 
 ## custom metrics ----
 
@@ -84,11 +93,32 @@ f<-function(z) {
     pzabovez3 = sum(z>3)/length(z)*100, # percent of returns greater than 3 m
     pz_0_to_1 = sum(0<z & z<=1)/length(z)*100, #proportion between 0 and 1 m
     # pz_0_to_3 = sum(0<=z & z<=3)/length(z)*100, #proportion between 0 and 3 m
-    pz_1_to_3 = sum(1<z & z<=3)/length(z)*100 # proportion between 1 and 3 m
-    # pz_3_to_5 = sum(3<z & z<=5)/length(z)*100 # proportion between 3 and 5 m
+    pz_1_to_3 = sum(1<z & z<=3)/length(z)*100, # proportion between 1 and 3 m,
+    pz_3_to_5 = sum(3<z & z<=5)/length(z)*100 # proportion between 3 and 5 m
   )
 }
 
-### Calculate custum metrics----
-cust_met <- pixel_metrics(nlas_v, func = ~f(Z), res=1)
+### Calculate custom metrics----
+cust_met <- pixel_metrics(nlas_v, func = ~f(Z), res=10)
 
+# Compute summary statistics
+stats <- global(cust_met$pz_1_to_3a, fun = c("mean", "min", "max", "sd"))
+# Print the statistics
+print(stats)
+
+
+## rasterize density----
+### overall density----
+d<-rasterize_density(nlas_v, 1)
+
+### density for specific strata----
+nlas_v_1_to_3= filter_poi(nlas_v, Z>=1, Z<=3)
+d_nlas_v_1_to_3<-rasterize_density(nlas_v_1_to_3, 1)
+names(d_nlas_v_1_to_3)<-"d_nlas_v_1_to_3"
+
+nlas_v_3_to_5= filter_poi(nlas_v, Z>=3, Z<=5)
+d_nlas_v_3_to_5<-rasterize_density(nlas_v_3_to_5, 1)
+names(d_nlas_v_3_to_5)<-"d_nlas_v_3_to_5"
+
+### combine into a single rast
+density_met<-c(d, d_nlas_v_1_to_3, d_nlas_v_3_to_5)
