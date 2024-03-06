@@ -17,11 +17,10 @@ r<-rast("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1_Proje
 
 #pipeline path
 path<-st_read("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1_Projects/pileated_woodpecker_lidar/0_data/external/Spatial/CanadianNatural/17324_Pathways_GlobalRaymac/Shapefiles/17324_ProjectBoundary_nad83_csrs_z12.shp")
-
+# horizon<-st_read("0_data/external/JCR_PIWOAssessment/JCR_PIWOAssessmentArea.shp")
 ##////////////////////////////////////////////////////////////////
 # #Resample raster to 100x100 ----
 # 
-# ##Sub 1----
 # ext <- res(r)  # Get the cell size of the raster
 # r2<-aggregate(r, fact=2, method="mean")
 # r3<-disagg(r2, fact=3, method="bilinear")
@@ -39,7 +38,7 @@ reclass_matrix <- matrix(c(0, .05, 0,
 ), byrow=TRUE, ncol=3)
 
 ## Reclassify the raster
-reclassified_raster <- classify(r3, rcl=reclass_matrix, right=TRUE)
+reclassified_raster <- classify(r, rcl=reclass_matrix, right=TRUE)
 
 # writeRaster(reclassified_raster, file="3_output/predict_rasters/reclassified_raster.tif", overwrite=TRUE)
 
@@ -50,6 +49,9 @@ reclassified_raster <- classify(r3, rcl=reclass_matrix, right=TRUE)
 # transform pipleline path to match the crs of the predictive raster
 path_1<-st_zm(path)
 path_2<-st_transform(path, crs=st_crs(r))
+
+# path_1<-st_zm(horizon)
+# path_2<-st_transform(horizon, crs=st_crs(r))
 
 ## Crop raster----
 cropped_raster<-crop(reclassified_raster, path_2)
@@ -76,9 +78,9 @@ mask2 <- ifel(r_path == 2, 2, NA)
 mask3 <- ifel(r_path == 3, 3, NA)
 
 ## Sample separately for each class----
-samples1 <- spatSample(mask1, size=40, method="random", as.points=TRUE, values=TRUE, na.rm=TRUE)
-samples2 <- spatSample(mask2, size=60, method="random", as.points=TRUE, values=TRUE, na.rm=TRUE)
-samples3 <- spatSample(mask3, size=100, method="random", as.points=TRUE, values=TRUE, na.rm=TRUE)
+samples1 <- spatSample(mask1, size=6, method="random", as.points=TRUE, values=TRUE, na.rm=TRUE)
+samples2 <- spatSample(mask2, size=10, method="random", as.points=TRUE, values=TRUE, na.rm=TRUE)
+samples3 <- spatSample(mask3, size=4, method="random", as.points=TRUE, values=TRUE, na.rm=TRUE)
 
 ## Combine samples into single dataframe----
 samples<-rbind(samples1, samples2, samples3)
@@ -133,4 +135,9 @@ samples_square$geometry <- squares_sfc
 ## Save as shapefile----
 st_write(samples_square, "3_output/data/samples_square.shp")
 st_write(samples_1, "3_output/data/samples_1.shp")
+
+
+# st_write(samples_square, "3_output/data/jcr_square.shp")
+# st_write(samples_1, "3_output/data/jcr_points.shp")
+
 
