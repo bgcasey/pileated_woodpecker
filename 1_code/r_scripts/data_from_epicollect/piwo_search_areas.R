@@ -31,10 +31,20 @@ secret <- "bEqr1LBQWmGFURt42V7Yogi7ZgQnuzjzVGqz4aDq"  # client secret
 
 # The following arguments can be found via the API tab in the 
 # eipcollect form dashboard. 
+proj.slug <- "# Get data from epicollect----
+cID <- "5249"  # client ID
+secret <- "bEqr1LBQWmGFURt42V7Yogi7ZgQnuzjzVGqz4aDq"  # client secret
+
+# The following arguments can be found via the API tab in the 
+# eipcollect form dashboard. 
 proj.slug <- "bu-piwo-cavity-survey-photos"  # project slug
 form.ref <- paste0("916196c9db8345dfad511f18283b9f0b",
                    "_65f45a58f2e6f")  # form reference
-branch.ref <- paste0("916196c9db8345dfad511f18283b9f0b_65f45a58f2e6f",
+branch.ref.1 <- paste0("916196c9db8345dfad511f18283b9f0b_65f45a58f2e6f",
+                     "_65f45b0ae8946")  # branch reference"  # project slug
+form.ref <- paste0("916196c9db8345dfad511f18283b9f0b",
+                   "_65f45a58f2e6f")  # form reference
+branch.ref.1 <- paste0("916196c9db8345dfad511f18283b9f0b_65f45a58f2e6f",
                      "_65f45b0ae8946")  # branch reference
 
 res <- POST("https://five.epicollect.net/api/oauth/token",
