@@ -71,7 +71,7 @@ mainmap<-
   tm_borders(lwd=.9, col="black")+
   tm_shape(ss_xy_ab)+
   tm_symbols(shape = 1, alpha = .3, size = .2, col = "red")+
-  tm_scale_bar(position=c("left", "BOTTOM"), text.color = "white", color.light="lightgrey")+
+  tm_scale_bar(position=c("left", "BOTTOM"), text.color = "black", color.light="lightgrey")+
   tm_graticules(lines=FALSE)
 
 tmap_save(mainmap,filename="3_output/maps/studyArea.png",

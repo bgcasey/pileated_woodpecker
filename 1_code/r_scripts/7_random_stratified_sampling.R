@@ -141,3 +141,4 @@ st_write(samples_1, "3_output/data/samples_1.shp")
 # st_write(samples_1, "3_output/data/jcr_points.shp")
 
 
+test<-st_read("3_output/data/jcr_mine_points_v2/jcr_squares.shp")

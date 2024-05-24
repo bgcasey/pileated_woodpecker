@@ -109,11 +109,11 @@ print(stats)
 
 ## rasterize density----
 ### overall density----
-d<-rasterize_density(nlas_v, 1)
+d<-rasterize_density(nlas_v, 10)
 
 ### density for specific strata----
 nlas_v_1_to_3= filter_poi(nlas_v, Z>=1, Z<=3)
-d_nlas_v_1_to_3<-rasterize_density(nlas_v_1_to_3, 1)
+d_nlas_v_1_to_3<-rasterize_density(nlas_v_1_to_3, 10)
 names(d_nlas_v_1_to_3)<-"d_nlas_v_1_to_3"
 
 nlas_v_3_to_5= filter_poi(nlas_v, Z>=3, Z<=5)
@@ -122,3 +122,8 @@ names(d_nlas_v_3_to_5)<-"d_nlas_v_3_to_5"
 
 ### combine into a single rast
 density_met<-c(d, d_nlas_v_1_to_3, d_nlas_v_3_to_5)
+
+writeRaster(density_met,file="density_met.tif")
+
+
+
