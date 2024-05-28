@@ -1,3 +1,10 @@
+/**** Start of imports. If edited, may not auto-convert in the playground. ****/
+var table = ee.FeatureCollection("users/bgcasey/provincial_boundaries/Alberta_boundary"),
+    table2 = ee.FeatureCollection("users/bgcasey/old/studyarea_CL"),
+    HFI = ee.FeatureCollection("projects/ee-bgcasey-piwo/assets/o18_HarvestAreas_HFI_2019");
+/***** End of imports. If edited, may not auto-convert in the playground. *****/
+
+
 
 // Run this script using the Earth Engine code editor at code.earthengine.google.com
 
@@ -15,12 +22,12 @@ var buf=600
 // define years and dates to include in image collection
 var startYear  = 2019;    
 var endYear    = 2020;  
-// var startDay   = '06-01'; // what is the beginning of date filter | month-day
-// var endDay     = '09-30'; // what is the end of date filter | month-day
+var startDay   = '06-01'; // what is the beginning of date filter | month-day
+var endDay     = '09-30'; // what is the end of date filter | month-day
 
 // Date range
 var Date_Start = ee.Date('2019-01-01');
-var Date_End = ee.Date('2019-12-31');
+var Date_End = ee.Date('2022-12-31');
   
  
 //set number of months in time interval
@@ -30,6 +37,11 @@ var interval=12;
 var study_area = ee.FeatureCollection("users/bgcasey/provincial_boundaries/Alberta_boundary");
 // var study_area = ee.FeatureCollection("users/bgcasey/old/studyarea_CL");
 
+
+// Human footprint layer
+var HFI = ee.FeatureCollection("projects/ee-bgcasey-piwo/assets/o18_HarvestAreas_HFI_2019");
+print(HFI.limit(10), "HFI")
+
 //########################################################################################################
 //##### Setup ##### 
 //########################################################################################################
@@ -38,6 +50,7 @@ var study_area = ee.FeatureCollection("users/bgcasey/provincial_boundaries/Alber
 var ss_xy_buff= ss_xy.map(function(pt){
     return pt.buffer(buf);
   });
+print("ss_xy_buff", ss_xy_buff.limit(10))
   
 var aoi = study_area.geometry();
 
@@ -54,7 +67,12 @@ dates = dates.map(make_datelist);
 
 print('list of dates for time series', dates)
 
-// Load helper functions
+
+//########################################################################################################
+//##### Helper functions ##### 
+//########################################################################################################
+
+// Get a time series of Landsat images
 var ts = require("users/bgcasey/PIWO:functions/timeseries_functions");
 var indices = require("users/bgcasey/PIWO:functions/indices");
 
@@ -63,8 +81,9 @@ var indices = require("users/bgcasey/PIWO:functions/indices");
 //##### Get spatial variables
 //########################################################################################################
 
+
 ////////////////////////////////////////
-// Canopy height and standard deviation
+// Canopy height
 ////////////////////////////////////////
 
 var canopy_height = ee.Image('users/nlang/ETH_GlobalCanopyHeight_2020_10m_v1')
@@ -75,7 +94,6 @@ var canopy_standard_deviation = ee.Image('users/nlang/ETH_GlobalCanopyHeightSD_2
       .rename('canopy_standard_deviation')
       .clip(aoi)
 
-
 //combine bands into single image
 var canopy = canopy_height.addBands([canopy_standard_deviation])
 // print("canopy", canopy)
@@ -83,69 +101,96 @@ var canopy = canopy_height.addBands([canopy_standard_deviation])
 var ev_fixed = canopy.reduceRegions({
   collection: ss_xy_buff,
   reducer: ee.Reducer.mean(),
-  scale: 600
+  scale: 30
 });
 
 print("ev_fixed", ev_fixed.limit(10))
-
 
 ////////////////////////////////////////
 // Landcover Indices
 ////////////////////////////////////////
 
-var ev_lc= indices.Landcover_ts(ev_fixed, Date_Start, Date_End)
-print("ev_lc", ev_lc.limit(2))
+// var LC = ee.ImageCollection('projects/sat-io/open-datasets/CA_FOREST_LC_VLCE2').
+// filterDate(Date_Start, Date_End);
+
+// print("LC", LC)
+
+      
+// // choose reducers
+// var reducers = ee.Reducer.count().combine({
+//   reducer2: ee.Reducer.frequencyHistogram(),
+//   sharedInputs: true
+// });
+
+// var LC_1 = LC.map(function(img) {
+//   return img.reduceRegions({
+//     collection: ev_fixed,
+//     reducer: reducers, // set the names of output properties to the corresponding band names
+//     scale: 30,
+//     tileScale: 2
+//   }).map(function (feature) {
+//             var histogramResults = ee.Dictionary(feature.get('histogram'));
+//             var pixel_count= ee.Number(feature.get('count'))
+//       return feature.copyProperties(img, ['system:time_start']) //to get year properties from the stack
+//             .set(// get proportion of landcover from histogram 
+//                 // by dividing histogram pixel values by the total pixel_count.
+//                 'Unclassified', ee.Number(histogramResults.get('0', 0)).divide(pixel_count),
+//                 'Water', ee.Number(histogramResults.get('20', 0)).divide(pixel_count),
+//                 'Snow_Ice', ee.Number(histogramResults.get('31', 0)).divide(pixel_count),
+//                 'Rock_Rubble', ee.Number(histogramResults.get('32', 0)).divide(pixel_count),
+//                 'Exposed_Barren_land', ee.Number(histogramResults.get('33', 0)).divide(pixel_count),
+//                 'Bryoids', ee.Number(histogramResults.get('40', 0)).divide(pixel_count),
+//                 'Shrubs', ee.Number(histogramResults.get('50', 0)).divide(pixel_count),
+//                 'Wetland', ee.Number(histogramResults.get('80', 0)).divide(pixel_count),
+//                 'Wetland-treed', ee.Number(histogramResults.get('81', 0)).divide(pixel_count),
+//                 'Herbs', ee.Number(histogramResults.get('100', 0)).divide(pixel_count),
+//                 'Coniferous', ee.Number(histogramResults.get('210', 0)).divide(pixel_count),
+//                 'Broadleaf', ee.Number(histogramResults.get('220', 0)).divide(pixel_count),
+//                 'Mixedwood', ee.Number(histogramResults.get('230', 0)).divide(pixel_count),
+//                 'landcover_yr', img.date().format('YYYY'));
+//   })
+// }).flatten(); //  Flattens collections of collections into a feature collection of those collections
+
+// print("LC1", LC_1.limit(2))
+// var LC = ee.ImageCollection('projects/sat-io/open-datasets/CA_FOREST_LC_VLCE2').
+// filterDate(Date_Start, Date_End);
+// LC.map(LC_fn)
+
+var mappedCollection = ev_fixed.map(function(collection) {
+  return indices.LC_fn(collection,  Date_Start, Date_End);
+});
+print(mappedCollection)
+
+
 
 ////////////////////////////////////////
 // Sentinel spectral indices
 ////////////////////////////////////////
 
 var S2_collection=ts.S2_DRS_fn(dates, interval, aoi)
-    .map(indices.addNDRS)
-    .map(indices.createBinaryMask);
-print("S2_collection", S2_collection.limit(1))
+                  .map(indices.addNDRS)
+                  .map(indices.createBinaryMask)
 
-/// extract to points
-var ev_all = S2_collection.map(function(img) {
-  return img.reduceRegions({
-    collection: ev_lc,
-    crs:'EPSG:3348',
-    reducer: ee.Reducer.mean(), // set the names of output properties to the corresponding band names
-    scale: 600,
-    tileScale: 4
-  }).map(function (featureWithReduction) {
-    return featureWithReduction.copyProperties(img); //to get year and month properties from the stack
-  });
-}).flatten(); //  Flattens collections
- 
-print("ev.all", ev_all.limit(10))
+print(S2_collection.limit(2), "S2_NDRS")
 
 
-// //########################################################################################################
-// // // ### Export data to a csv ###
-// //########################################################################################################
 
-// Exclude specific fields
-// Define the selector to exclude
-var excludedSelectors = ['month', 'system:time_start', 'count', 'date', 'histogram', 'year'];
+// ########################################################################################################
+// ### Save/export landcover data ###
+// ########################################################################################################
 
-// Get all selectors from the table
-var allSelectors = ev_all.first().propertyNames();
-// print(allSelectors, "allselectors")
-
-// Filter out the excluded selectors
-var includedSelectors = allSelectors.filter(ee.Filter.inList('item', excludedSelectors).not());
-
-// Create a new feature collection with the desired selectors
-var filteredTable = ev_all.select(includedSelectors);
-
-//Export table to drive
+// Export landcover data to a csv
 Export.table.toDrive({
   folder: 'PIWO_GEE',
-  collection: filteredTable,
-  description:'ss_all_indices',
-  fileFormat: 'csv',
-  // selectors: allSelectors
+  collection: LC_1,
+  description:'gee_metrics',
+  fileFormat: 'csv'
+    // selectors: [ // choose properties to include in export table
+    //               'SS', 
+    //               'srvy_yr',
+    //               'landcover_yr',
+    //               'count'
+    //               ] 
 });
 
 
@@ -157,13 +202,8 @@ Export.table.toDrive({
 // Add layers to map
 /////////////////////////////////////////////////
 
-var LC = ee.ImageCollection('projects/sat-io/open-datasets/CA_FOREST_LC_VLCE2')
-var Forests=LC.first().eq(210).or(LC.first().eq(220).or(LC.first().eq(230)))
-Map.addLayer(Forests.clip(aoi), {palette:['brown', 'green']}, "Forests")
-
-
-// var abmiLiDAR = ee.FeatureCollection("projects/ee-bgcasey-piwo/assets/LiDAR_Imagery_External_24Apr23");
-// Map.addLayer(abmiLiDAR, {}, "abmiLiDAR");
+var abmiLiDAR = ee.FeatureCollection("projects/ee-bgcasey-piwo/assets/LiDAR_Imagery_External_24Apr23");
+Map.addLayer(abmiLiDAR, {}, "abmiLiDAR");
 
   
 var DRS_Image = ee.Image(S2_collection.first().select('DRS')); 
@@ -185,6 +225,7 @@ var NDRS_Image = ee.Image(S2_collection.first().select('NDRS'));
   {min: 0, max: 0.4, palette: ['green', 'yellow', 'red']},
   'NDRS')
 
+
 var stressed_image = ee.Image(S2_collection.first().select('NDRS_stressed')); 
   Map.addLayer(
   stressed_image, 
@@ -196,7 +237,6 @@ Map.addLayer(ss_xy, {}, "ss_xy");
 /////////////////////////////////////////////////
 // Histograms
 /////////////////////////////////////////////////
-
 
 var chart=ui.Chart.image.histogram({image:S2_collection.select(['DRS']).first(), scale: 1000})
         // .setSeriesNames(['mean_temp_offset'])
@@ -234,7 +274,7 @@ print(chart);
 
 
 
-var chart=ui.Chart.image.histogram({image:S2_collection.select(['NDRS']).first(), scale: 1000})
+var chart=ui.Chart.image.histogram({image:S2_NDRS.select(['NDRS']).first(), scale: 1000})
         // .setSeriesNames(['mean_temp_offset'])
         .setOptions({
           title: 'NDRS Histogram',
@@ -249,5 +289,3 @@ var chart=ui.Chart.image.histogram({image:S2_collection.select(['NDRS']).first()
           titlePosition: 'none'
         });
 print(chart);
-
-

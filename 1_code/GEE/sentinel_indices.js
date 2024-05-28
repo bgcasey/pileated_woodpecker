@@ -1,8 +1,8 @@
 /////////////////////////////////////////////////
 // Sentinel 2
 /////////////////////////////////////////////////
-
-
+ 
+ 
 /////////////////////////////////////////////////
 
 // Normalized Difference Vegetation Index NDVI band
@@ -90,7 +90,7 @@ exports.addDRS = function(image) {
 // Normalized distance red & SWIR (NDRS) function
 
 exports.addNDRS = function(image) {
-  var masks = require("users/bgcasey/PIWO:functions/masks");
+  var masks = require("users/bgcasey/functions:masks");
 
   var maskedImage_1 = masks.maskByForestAge(image)
   var maskedImage_2 = masks.maskByLandcover(maskedImage_1)
@@ -151,7 +151,7 @@ var threshold = 0.5;
 
 // Define a function to create a binary mask based on the threshold
 exports.createBinaryMask = function(image) {
-  var masks = require("users/bgcasey/PIWO:functions/masks");
+  var masks = require("users/bgcasey/functions:masks");
   //mask out non forest pixels and replace with zero to maintain a continuos raster
   var maskedImage = masks.maskByLandcover(image).unmask(0)
 

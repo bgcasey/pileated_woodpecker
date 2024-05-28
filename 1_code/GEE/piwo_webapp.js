@@ -1,0 +1,770 @@
+/*
+ * ---
+ * title: "Pileated Woodpecker Project GEE App"
+ * author: "Brendan Casey"
+ * created: "2024-05-26"
+ * description: "This Google Earth Engine (GEE) application 
+ * visualizes the field work done and products generated for 
+ * our Pileated Woodpecker project. The application includes 
+ * various layers such as the locations of known PIWO cavities, 
+ * areas searched for cavities, planned pipeline routes, and 
+ * the latest PIWO predictive map. It also offers features to 
+ * toggle the visibility of these layers and download shapefiles 
+ * for further analysis."
+ * ---
+ */
+
+/**
+ * SECTION 1: Importing Assets
+ * This section imports geospatial assets such as the study 
+ * area, xy locations, pipeline route, and a predictive map 
+ * of PIWO occupancy. It also creates a mask for the study area.
+ */
+
+/*
+ * Import the study area and its geometry, xy locations, PIWO 
+ * cavities and searched areas, the pipeline route, and the 
+ * predictive map of PIWO occupancy
+ */
+var studyArea = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/Alberta_boundary"),
+    ssXy = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/ss_xy_ab"),
+    piwoCavities = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/piwo_cavities"),
+    piwoSearched = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/piwo_searched"),
+    pipeline = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/17324_ProjectBoundary_nad83_csrs_z12"),
+    piwoOcc = ee.Image(
+  "projects/ee-bgcasey-piwomodels/assets/brt_ls_hlc_terrain_canopy_29_2_p_piwo"),
+  piwoReclass = ee.Image(
+  "projects/ee-bgcasey-piwomodels/assets/p_piwo_reclass");
+
+
+var aoi = studyArea.geometry();
+// print(uaLogo)
+
+// Create a mask for the study area and apply it to the predictive map
+var boundaryMask = ee.Image.constant(0).paint(aoi, 1);
+piwoOcc = piwoOcc.updateMask(piwoOcc.mask().multiply(boundaryMask));
+piwoReclass = piwoReclass.updateMask(piwoReclass.mask()
+                                     .multiply(boundaryMask));
+
+// Clear the data from previous steps
+boundaryMask = null;
+aoi = null;
+studyArea = null
+
+
+/**
+ * SECTION 2: Setting UI Map Layers
+ * This section sets up the map layers for the UI. It defines the color 
+ * palette for the terrain and the visualization parameters for the 
+ * occupancy. It also creates map layers for the pipeline route, PIWO 
+ * cavities, and searched areas, and adds them to the map.
+ */
+
+// Define the color palettes for rasters
+var rTerrain20 = ["00A600", "13AD00", "28B400", "3EBB00", 
+  "56C200", "70C900", "8BD000", "#A7D700", "C6DE00", 
+  "E6E600", "E7D217", "E8C32E", "E9B846", "EBB25E", 
+  "#ECB176", "EDB48E", "EEBCA7", "F0C9C0", "F1DBD9", "F2F2F2"];
+
+var rTerrain04 = ["00A600",  "8BD000",  "EBB25E", "F2F2F2"];
+
+
+// Define the visualization parameters for the occupancy
+var visOccu = {min: 0, max: 1, palette: rTerrain20.reverse()};        
+
+// Create map layers for the occupancy, pipeline route, PIWO cavities, 
+// and searched areas
+var piwoOccLayer = ui.Map.Layer(piwoOcc, visOccu, 
+  "Pileated woodpecker occupancy").setShown(1).setOpacity(.7);        
+
+// Define the visualization parameters for the reclassed map
+var visReclass = {min: 0, max: 1, palette: rTerrain04.reverse()};   
+
+var piwoReclassLayer = ui.Map.Layer(piwoReclass, visReclass, 
+  "Pileated woodpecker habitat suitability").setShown(1)
+  .setOpacity(.7);  
+
+var pipelineLyr = ui.Map.Layer(pipeline.style(
+  {color: '05f9e2', fillColor: '#fdbf6f20', width: 1}), {}, 
+  "pipeline route").setShown(0);
+Map.add(pipelineLyr);
+
+var piwoCavitiesLyr = ui.Map.Layer(piwoCavities.style(
+  {color: 'f50b86', pointSize: 3}), {}, "PIWO Cavities").setShown(1);
+Map.add(piwoCavitiesLyr);
+
+var piwoSearchedLyr = ui.Map.Layer(piwoSearched.style(
+  {color: 'd8f400', fillColor: 'fdbf6f50', width: 3}), {}, 
+  "Searched areas").setShown(1);
+Map.add(piwoSearchedLyr);
+
+
+/**
+ * SECTION 3: Creating Legend
+ * This section creates a legend for the map. It includes a color bar 
+ * and labels for the probability of PIWO occupancy.
+ */
+
+// Occupancy raster
+// Create a panel for the legend
+// Occupancy raster
+// Create a panel for the legend
+var legendRaster = ui.Panel({
+  style: {
+    position: 'bottom-right', 
+    padding: '5px 15px', 
+    shown: false
+  }
+});
+
+// Add a title to the legend
+var legendTitle = ui.Label({
+  value: 'Probability of Pileated Woodpecker occupancy',
+  style: {
+    fontWeight: 'bold', 
+    fontSize: '12px', 
+    margin: '0 0 10px 0px'
+  }
+});
+legendRaster.add(legendTitle);
+
+// Create a function to generate color bar parameters
+function makeColorBarParams(palette) {
+  return {
+    bbox: [0, 0, 1, 0.1], 
+    dimensions: '100x10', 
+    format: 'png',
+    min: 0, 
+    max: 1, 
+    palette: palette
+  };
+}
+
+// Create the color bar for the legend
+var colorBarOccu = ui.Thumbnail({
+  image: ee.Image.pixelLonLat().select(0),
+  params: makeColorBarParams(visOccu.palette),
+  style: {
+    stretch: 'horizontal', 
+    margin: '0px 8px', 
+    maxHeight: '24px'
+  }
+});
+legendRaster.add(colorBarOccu);
+
+// Create labels for the legend
+var legendLabelsOccu = ui.Panel({
+  widgets: [
+    ui.Label(visOccu.min, {margin: '4px 8px'}),
+    ui.Label(
+      ((visOccu.max - visOccu.min) / 2 + visOccu.min), {
+        margin: '4px 8px', 
+        textAlign: 'center', 
+        stretch: 'horizontal'
+      }
+    ),
+    ui.Label(visOccu.max, {margin: '4px 8px'})
+  ],
+  layout: ui.Panel.Layout.flow('horizontal')
+});
+legendRaster.add(legendLabelsOccu);
+Map.add(legendRaster);
+
+// Reclassified raster
+// Define the values and their corresponding colors
+var values = [1, 2, 3];
+var colors = ["#EBB25E", "#8BD000", "#00A600"];
+var labels = [
+  "low suitability", 
+  "moderate suitability", 
+  "high suitability"
+];
+
+// Create a legend
+var legendReclass = ui.Panel({
+  style: {
+    position: 'bottom-right', 
+    shown: false
+  }
+});
+legendReclass.add(ui.Label(
+  'Pileated Woodpecker habitat suitability', 
+  {fontWeight: 'bold'}
+));
+
+
+// Add one row per value
+values.forEach(function(val, index) {
+  var colorBox = ui.Label({
+    style: {
+      backgroundColor: colors[index],
+      padding: '10px',
+      margin: '0 0 4px 0'
+    }
+  });
+  var description = ui.Label({
+    value: labels[index],
+    style: {margin: '0 0 4px 6px'}
+  });
+  legendReclass.add(ui.Panel([colorBox, description], 
+    ui.Panel.Layout.Flow('horizontal')));
+});
+
+Map.add(legendReclass);
+
+/**
+ * SECTION 4: Toggle Map Features
+ * This section creates checkboxes to toggle the visibility of different 
+ * map features. It includes checkboxes for the pipeline route, PIWO 
+ * nest cavities, searched areas, and PIWO map.
+ */
+
+/**
+ * Creates a styled checkbox for toggling map features.
+ *
+ * @param {string} label - The label for the checkbox.
+ * @param {string} color - The color of the checkbox icon.
+ * @param {boolean} shown - The initial visibility of the layer.
+ * @param {Object} layer - The map layer associated with the checkbox.
+ * @returns {Object} panel - A panel containing the checkbox, icon, and label.
+ */
+function createStyledCheckbox(label, color, shown, layer) {
+  var checkbox;
+
+  // If the layer is the PIWO occurrence layer or the reclassified layer, 
+  // create a checkbox that toggles the visibility of the 
+  // layer and the corresponding legend.
+  if (layer === piwoOccLayer || layer === piwoReclassLayer) {
+    checkbox = ui.Checkbox('', shown);
+    checkbox.onChange(function(checked) {
+      if (checked) {
+        Map.layers().insert(0, layer); // Add layer at the bottom
+        (layer === piwoOccLayer ? legendRaster : legendReclass)
+        .style().set('shown', true);
+      } else {
+        Map.remove(layer);
+        (layer === piwoOccLayer ? legendRaster : legendReclass)
+        .style().set('shown', false);
+      }
+    });
+  } else {
+    // For other layers, create a checkbox that toggles the visibility
+    // of the layer.
+    checkbox = ui.Checkbox('', shown);
+    checkbox.onChange(function(checked) {
+      layer.setShown(checked);
+    });
+  }
+
+  var icon;
+
+  // Set the icon for the checkbox based on the layer.
+  if (layer === piwoCavitiesLyr) {
+    icon = ui.Label('\u25cf', {color: '#' + color});
+  } else if (layer === pipelineLyr || layer === piwoSearchedLyr) {
+    icon = ui.Label('\u25A1', {color: '#' + color});
+  } else if (layer === piwoOccLayer) {
+    icon = ui.Label('\u25A1', {color: '#' + color});
+  } else if (layer === piwoReclassLayer) {
+    icon = ui.Label('\u25A1', {color: '#' + color}); 
+  } else {
+    icon = ui.Label('', {color: '#' + color});
+  }
+
+  // Create a label for the checkbox.
+  var textLabel = ui.Label(label);
+
+  // Create a panel containing the checkbox, icon, and label.
+  var panel = ui.Panel([checkbox, icon, textLabel], 
+    ui.Panel.Layout.flow('horizontal'), {margin: '0 0 0 0'});
+
+  return panel;
+}
+
+// Create checkboxes for the pipeline route, PIWO nest cavities, 
+// searched areas, and PIWO map
+var checkboxMaster = ui.Panel({
+  layout: ui.Panel.Layout.flow('vertical'),
+  style: {width: '100%', padding: '0px', margin: '0px'}
+});
+
+checkboxMaster.add(createStyledCheckbox(
+  'Pathways Pipeline', '05f9e2', false, pipelineLyr));
+checkboxMaster.add(createStyledCheckbox(
+  'Pileated woodpecker nest cavities', 'f50b86', true, 
+  piwoCavitiesLyr));
+checkboxMaster.add(createStyledCheckbox(
+  'Searched areas', 'd8f400', true, piwoSearchedLyr));
+checkboxMaster.add(createStyledCheckbox(
+  'Pileated woodpecker occupancy', "FFFFFF", false, piwoOccLayer));
+checkboxMaster.add(createStyledCheckbox(
+  'Pileated woodpecker occupancy reclassified', "FFFFFF", false, 
+  piwoReclassLayer));
+
+/**
+ * SECTION 5: Download Buttons
+ * This section creates buttons to download the PIWO cavities and 
+ * searched areas as shapefiles.
+ */
+
+// Create buttons to download the PIWO cavities and searched areas
+var downloadCavitiesButton = ui.Button({
+  label: 'Download PIWO cavity locations',
+  onClick: function() {
+    var link = piwoCavities.getDownloadURL({
+      format: 'SHP',
+      filename: 'piwo_cavities_2024-05-26'
+    });
+    window.open(link, '_blank');
+  }
+});
+
+var downloadSearchedButton = ui.Button({
+  label: 'Download searched areas',
+  onClick: function() {
+    var link = piwoSearched.getDownloadURL({
+      format: 'SHP',
+      filename: 'piwo_searched_areas_2024-05-26'
+    });
+    window.open(link, '_blank');
+  }
+});
+
+var buttonPanel = ui.Panel({
+  widgets: [downloadCavitiesButton, downloadSearchedButton],
+  layout: ui.Panel.Layout.flow('horizontal'),
+  style: {stretch: 'horizontal'}
+});
+
+/**
+ * SECTION 6: Main Panel
+ * This section sets up the main panel of the UI. It includes an 
+ * introduction, a description of the project, links to the GitHub 
+ * repository and data submission/request forms, and separators for 
+ * visual organization.
+ */
+
+// Set up the main panel of the UI
+var mainPanel = ui.Panel(
+  {style: {width:'30%', padding: '20px 20px '}});
+ui.root.insert(0, mainPanel);
+
+// Add an introduction, a description of the project, links to the GitHub 
+// repository and data submission/request forms, and separators to the main panel
+var title = ui.Label('Pileated Woodpecker Nest Detection', {
+  fontWeight: 'bold', 
+  fontSize: '24px', 
+  margin: '10px 0px 0px 8px'
+});
+
+var authors = ui.Label('Dr. Brendan Casey, Simran Baines, Dr. Erin Bayne', {
+  fontWeight: 'bold',
+  margin: '0px 0px 10px 8px'
+});
+
+var description = ui.Label(
+  'The Migratory Bird Convention (MBCA) act is a law intended to limit ' +
+  'the accidental destruction of nests from human activities. Recent ' +
+  'amendments for Pileated Woodpecker cavity nests ' +
+  'stipulate that nests must be protected year-round and those not being ' +
+  'used must be protected for 36 months from last known use before removal ' +
+  'is allowed. For industry to operate efficiently and not violate these ' +
+  'regulations requires an understanding of where Pileated Woodpecker are ' +
+  'located to ensure they are in compliance. This project provides a set of ' +
+  'tools for helping industry identify where Pileated Woodpecker are likely ' +
+  'to be and where additional monitoring is and is not needed to find nests.'
+);
+
+var description2 = ui.Label(
+  'Here we present our latest predictive map, areas that we have searched ' +
+  'for Pileated Woodpecker nest cavities, and known nest cavity locations. ' +
+  'Data and survey protocols are available on request through the links ' +
+  'provided below. Please direct all correspondence to Dr. Brendan '+ 
+  'Casey (bgcasey@ualberta.ca)'
+);
+
+// var github = ui.Label('https://github.com/bgcasey/pileated_woodpecker_sdm', {
+//   color: '0000EE'
+// }, 'https://github.com/bgcasey/pileated_woodpecker_sdm');
+
+var submitData = ui.Label('Submit Data', {
+  color: '0000EE'
+}, 'https://docs.google.com/forms/d/e/1FAIpQLSef4UjSEU1yvH9As-'+
+   'J1GekMhWCnC211ky7-OCsjx4IhgwHLQg/viewform?usp=sf_link'
+   );
+
+var requestData = ui.Label(
+  'Request Data', 
+  {
+    color: '0000EE'
+  }, 
+  'https://docs.google.com/forms/d/e/1FAIpQLScHc8rUl5wZnR4b3QPCCkv0cGcFO9wXX-' +
+  'bRzneLQSTzGb0mEQ/viewform?usp=sf_link'
+  );
+
+function createSeparator(color) {
+  return ui.Panel([
+    ui.Label({
+      value: '______________________________________________________________________',
+      style: {fontWeight: 'bold', color: color}
+    })
+  ]);
+}
+
+// Add sections to the main panel
+mainPanel.add(title)
+  .add(authors)
+  .add(description)
+  .add(description2)
+  // .add(github)
+  .add(createSeparator('2D333C'))
+  .add(checkboxMaster)
+  .add(createSeparator('FFFFFF'))
+  .add(buttonPanel)
+  .add(createSeparator('FFFFFF'))
+  .add(requestData)
+  .add(submitData)
+  .add(createSeparator('FFFFFF'))
+
+/**
+ * SECTION 7: Customize Basemap
+ * This section creates a custom basemap using 
+ * https://snazzymaps.com/style/28780/at, 
+ * and centers the map on the study area.
+ */
+  
+var Basemap = [
+    {
+        "featureType": "administrative",
+        "elementType": "all",
+        "stylers": [
+            {
+                "hue": "#3a3935"
+            },
+            {
+                "saturation": 5
+            },
+            {
+                "lightness": -57
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "administrative",
+        "elementType": "geometry.fill",
+        "stylers": [
+            {
+                "color": "#d25151"
+            }
+        ]
+    },
+    {
+        "featureType": "administrative.country",
+        "elementType": "geometry.fill",
+        "stylers": [
+            {
+                "color": "#a75858"
+            }
+        ]
+    },
+    {
+        "featureType": "administrative.province",
+        "elementType": "geometry.stroke",
+        "stylers": [
+            {
+                "hue": "#ffffff"
+            },
+            {
+              "weight": 1.5
+            },
+            {
+                "lightness": 100
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    },
+     {
+        "featureType": "administrative.province",
+        "elementType": "labels",
+        "stylers": [
+            {
+                "hue": "#ffffff"
+            },
+            {
+                "lightness": 100
+            },
+            {
+                "visibility": "off"
+            }
+        ]
+    },
+    {
+        "featureType": "administrative.locality",
+        "elementType": "labels",
+        "stylers": [
+            {
+                "hue": "#B2BEB5"
+            },
+            {
+                "lightness": 30
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "administrative.neighborhood",
+        "elementType": "all",
+        "stylers": [
+            {
+                "hue": "#ffffff"
+            },
+            {
+                "lightness": 100
+            },
+            {
+                "visibility": "off"
+            }
+        ]
+    },
+    {
+        "featureType": "administrative.land_parcel",
+        "elementType": "all",
+        "stylers": [
+            {
+                "hue": "#ffffff"
+            },
+            {
+                "lightness": 50
+            },
+            {
+                "visibility": "off"
+            }
+        ]
+    },
+    {
+        "featureType": "landscape",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#b7caaa"
+            },
+            {
+                "saturation": -14
+            },
+            {
+                "lightness": -18
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    },
+    {
+        "featureType": "landscape.man_made",
+        "elementType": "all",
+        "stylers": [
+            {
+                "hue": "#cbdac1"
+            },
+            {
+                "saturation": -6
+            },
+            {
+                "lightness": -9
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    },
+    {
+        "featureType": "poi",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#c17118"
+            },
+            {
+                "saturation": 61
+            },
+            {
+                "lightness": -45
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    },
+    {
+        "featureType": "poi.medical",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#cba923"
+            },
+            {
+                "saturation": 50
+            },
+            {
+                "lightness": -46
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "poi.park",
+        "elementType": "all",
+        "stylers": [
+            {
+                "hue": "#8ba975"
+            },
+            {
+                "saturation": -46
+            },
+            {
+                "lightness": -28
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "road",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#8d9b83"
+            },
+            {
+                "saturation": -89
+            },
+            {
+                "lightness": -12
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    },
+    {
+        "featureType": "road.highway",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#d4dad0"
+            },
+            {
+                "saturation": -88
+            },
+            {
+                "lightness": 54
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "road.arterial",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#bdc5b6"
+            },
+            {
+                "saturation": -89
+            },
+            {
+                "lightness": -3
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "road.local",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#bdc5b6"
+            },
+            {
+                "saturation": -89
+            },
+            {
+                "lightness": -26
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    },
+    {
+        "featureType": "transit",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#a43218"
+            },
+            {
+                "saturation": 74
+            },
+            {
+                "lightness": -51
+            },
+            {
+                "visibility": "simplified"
+            }
+        ]
+    },
+    {
+        "featureType": "transit.station",
+        "elementType": "labels.text.fill",
+        "stylers": [
+            {
+                "color": "#57de54"
+            }
+        ]
+    },
+    {
+        "featureType": "water",
+        "elementType": "geometry",
+        "stylers": [
+            {
+                "hue": "#165c64"
+            },
+            {
+                "saturation": 34
+            },
+            {
+                "lightness": -69
+            },
+            {
+                "visibility": "on"
+            }
+        ]
+    }
+]
+
+// Apply the custom basemap style
+Map.setOptions('Basemap', {'Basemap': Basemap});
+
+// Center the map on the study area
+Map.setCenter(-112.4652, 55.2103, 7.5);
+
