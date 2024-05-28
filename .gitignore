@@ -48,5 +48,5 @@ vignettes/*.pdf
 5_other_writing/
 # Google Drive Icon file
 Icon?
-deprecated/
+.deprecated/
 .login.R
