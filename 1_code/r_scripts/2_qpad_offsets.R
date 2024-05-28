@@ -30,7 +30,7 @@ rtz <- raster("0_data/external/QPAD/utcoffset.tif")
 crs <- proj4string(rtree)
 
 ##Source functions----
-source("1_code/r_scripts/functions.R")
+source("1_code/r_scripts/functions/qpad_functions.R")
 
 #Define variables----
 
