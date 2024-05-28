@@ -1,74 +1,52 @@
 # History files
 .Rhistory
 .Rapp.history
-
 # Session Data files
 .RData
-
 # User-specific files
 .Ruserdata
-
 # Example code in package build process
 *-Ex.R
-
 # Output files from R CMD build
 /*.tar.gz
-
 # Output files from R CMD check
 /*.Rcheck/
-
 # RStudio files
 .Rproj.user/
-
 # produced vignettes
 vignettes/*.html
 vignettes/*.pdf
-
 # OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
 .httr-oauth
-
 # knitr and R markdown default cache directories
 *_cache/
 /cache/
-
 # Temporary files created by R markdown
 *.utf8.md
 *.knit.md
-
 # Data folder
 0_data/external/*
 0_data/manual/*
 0_data/test_ibutton_file_structure/*
-
 2_pipeline/tmp/*
 2_pipeline/store/*
-
 !0_data/README.md
-
 !3_output
-
 # R Environment Variables
 .Renviron
-
 # temp Drive folder
 *driveupload/*
 .tmp.drivedownload/*
-
 5_model_summaries/_book/
 5_model_summaries/_bookdown_files/
 5_model_summaries/_rsconnect/
 5_model_summaries/rsconnect/
 5_model_summaries/model_results_files/
 5_model_summaries/climateOffset_models_files/
-
 3_output/
-
 4_manuscript/
 5_other_writing/
-
 # Google Drive Icon file
 Icon?
-
-depreciated/
-
+deprecated/
 .login.R

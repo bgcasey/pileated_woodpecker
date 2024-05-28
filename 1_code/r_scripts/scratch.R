@@ -50,3 +50,11 @@ field_notes <- df
 save(field_notes, file = "0_data/manual/wood_field_notes_2024.RData")
 
 
+
+library(terra)
+ua<-rast("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/3_Resources/images/logos/UA_Logo_Green_RGB.tiff")
+# Assign a CRS
+crs(ua) <- "EPSG:4326"  # WGS 84
+
+# Write the raster to a new GeoTIFF file
+writeRaster(ua, "~/path/to/output/UA_Logo_Green_RGB_GeoTIFF.tiff", format = "GTiff")
