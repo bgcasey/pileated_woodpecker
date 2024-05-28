@@ -2,7 +2,8 @@
 # title: "Calculate LiDAR Derivitives"
 # author: "Brendan Casey"
 # created: "2023-10-30"
-# description: "Code to process LAS/LAZ files, filter ground points, and calculate custom LiDAR dervitives using the lidR package."
+# description: "Code to process LAS/LAZ files, filter ground points, 
+# and calculate custom LiDAR dervitives using the lidR package."
 # ---
 
 #Setup ----
@@ -25,7 +26,10 @@ las<-readLAS("0_data/external/Spatial/ABMI/LiDAR/LAZ/373_6165.laz")
 ## Here I used the las to create an aoi as an example
 bb<-st_bbox(las)
 aoi<-st_as_sfc(st_bbox(bb))
-aoi2<-st_buffer(aoi, -450) #created a small bounding box to make the following test code run faster
+
+# created a small bounding box to make the following test code 
+# run faster
+aoi2<-st_buffer(aoi, -450) 
 aoi_bb<-st_bbox(aoi2)
 
 ## Crop las by aoi----
@@ -36,7 +40,8 @@ plot(las2, size = 15, bg = "white")
 ##////////////////////////////////////////////////////////////////
 
 # Normalize las----
-## Need to normalize the las so that z coordinates represent height above ground and not elevation
+## Need to normalize the las so that z coordinates represent height 
+# above ground and not elevation
 
 ## Create a dtm----
 ## this is a raster surface representing bare earth/ground
@@ -70,7 +75,8 @@ met1<-pixel_metrics(nlas_v, func = .stdmetrics, res=10)
 
 
 # Compute summary statistics
-stats <- global(met1$pzabovezmean, fun = c("mean", "min", "max", "sd"))
+stats <- global(met1$pzabovezmean, fun = c("mean", "min", 
+                                           "max", "sd"))
 # Print the statistics
 print(stats)
 
