@@ -174,7 +174,3 @@ plot(test$geometry, col = "lightblue", border = "darkblue")
 
 # Add the points on top
 plot(test1$geometry, add = TRUE, col = "red", pch = 1)
-
-
-st_write("0_data/external/Simran_Bains/fieldwork_2024/sample_locations_v4/sample_squares_v4.geojson"
-

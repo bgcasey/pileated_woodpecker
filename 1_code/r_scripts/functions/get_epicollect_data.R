@@ -96,11 +96,11 @@ get_epi_data <- function(cID, secret, proj.slug, form.ref,
 # proj.slug <- "your_project_slug"  # project slug
 # form.ref <- "your_form_reference"  # form reference
 # branch.ref.1 <- "your_branch_1_reference"  # branch reference
-# branch.ref.2 <- "your_branch_2_reference"  # branch reference
-# branch.ref.4 <- "your_branch_3_reference"  # branch reference
+# branch.ref.2 <- "your_branch_2_reference"  # branch reference (optional)
+# branch.ref.4 <- "your_branch_3_reference"  # branch reference (optional)
 
 # data <- get_epi_data("your_client_id", "your_secret_key", 
 #                             "your_project_slug", "your_form_ref", 
 #                             "your_branch_ref_1", 
-#                             "your_branch_ref_2", 
-#                             "your_branch_ref_3")
+#                             "your_branch_ref_2 (optional)", 
+#                             "your_branch_ref_3 (optional)")
