@@ -1,3 +1,13 @@
-Using LiDAR to improve Pileated Woodpecker models
+---
+title: readme
+date: 2024-05-30
+type: writing
+tags: " #writing #ualberta/postdoc/PIWO "
+description: Project readme
+---
 
-Methods, code, and workflow.
+# PIWO project
+
+asdvlskdvm. vsad;mafdv s;davm'vm
+
+## Methods

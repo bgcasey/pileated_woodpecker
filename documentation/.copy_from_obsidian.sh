@@ -1,0 +1,1 @@
+cp /path/to/source/directory/* /path/to/destination/directory
