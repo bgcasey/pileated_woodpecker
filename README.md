@@ -40,7 +40,7 @@ cov7 --> cov8[extract values to points]
 
 Descriptions of code and methods can be found through the links below. 
 
-- [sourcing and processing Pileated Woodpecker data](documentation/piwo_data)
+- [sourcing and processing Pileated Woodpecker data](documentation/piwo_data.md)
 - [extracting spatial covariates](documentation/spatial_covariates)
 - [statistical analyses](documentation/statistical_analyses)
 - [model validation and random stratified sampling](documentation/random_stratified_sampling)
