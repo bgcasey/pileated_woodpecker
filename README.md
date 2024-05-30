@@ -27,4 +27,3 @@ Below is an outline of our methodological workflow.
    - [get_epicollect_data.R]("1_code/r_scripts/get_epicollect_data.R")
    - [piwo_webapp.js]("1_code/GEE/piwo_webapp.js")
 
-Please direct all correspondence to Dr. Brendan Casey (bgcasey@ualberta.ca)
