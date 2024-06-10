@@ -27,3 +27,8 @@ Below is an outline of our methodological workflow.
    - [get_epicollect_data.R](1_code/r_scripts/get_epicollect_data.R)
    - [piwo_webapp.js](1_code/GEE/piwo_webapp.js)
 
+
+----
+**Citation:**
+
+Brendan Casey, Bayne, E., & Baines, S. (2024). Improving Pileated Woodpecker nest cavity detection (v0.10). Zenodo. https://doi.org/10.5281/zenodo.11396173
