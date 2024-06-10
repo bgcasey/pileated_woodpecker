@@ -14,9 +14,9 @@
 # further analysis."
 # ---
 
-#  Setup ----
+# 1. Setup ----
 
-## Load packages ----
+## 1.1 Load packages ----
 # If not installed, uncomment the lines below to install
 # install.packages("remotes")
 # remotes::install_github("ABbiodiversity/wildRtrax")
@@ -24,16 +24,15 @@
 library(wildRtrax)
 library(tidyverse)
 
-## Login to WildTrax ----
+## 1.2 Login to WildTrax ----
 # The config file contains the login credentials. 
 config <- "1_code/r_scripts/.wtlogin.R"
 source(config)
 wt_auth()
 
-# ********************************************************************
-# Fetch data from WildTrax by sensor type: PC and ARU ---- 
+# 2. Fetch data from WildTrax by sensor type: PC and ARU ---- 
 
-## Point count data ----
+## 2.1 Point count data ----
 # Get the summary of downloads for the point counts. Filter for PC 
 # sensor data,download the report for each project, and store in a 
 # dataframe.
@@ -59,7 +58,7 @@ my_report_pc <- wt_get_download_summary(sensor_id = "PC") %>%
   unnest(col = data) %>%
   mutate(survey_type="PC")
 
-## ARU data ----
+## 2.2 ARU data ----
 # Get the summary of downloads for the ARUs. Filter for ARU sensor 
 # data, download the report for each project, and store in a 
 # dataframe.
@@ -83,8 +82,7 @@ my_report_aru <- wt_get_download_summary(sensor_id = "PC") %>%
   unnest(col=data) %>%
   mutate(survey_type="ARU")
 
-# ********************************************************************
-# Save ----
+# 3. Save ----
 wildtrax_raw_pc <- my_report_pc
 save(wildtrax_raw_pc, 
      file=paste0("0_data/manual/wildtrax_raw_pc_", 
