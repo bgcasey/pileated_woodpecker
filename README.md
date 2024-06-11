@@ -15,23 +15,22 @@ A [web application](https://ee-bgcasey-piwomodels.projects.earthengine.app/view/
 Below is an outline of our methodological workflow. 
 
 1. [Sourcing and processing Pileated Woodpecker data](documentation/piwo_data.md)
-   1. [01_fetch_bird_data_from_WildTrax.R](1_code/r_scripts/01_fetch_bird_data_from_WildTrax.R)
-   2. [02_clean_bird_data.R](1_code/r_scripts/02_clean_bird_data.R)
-   3. [03_create_spatial_object_with_point_count_locations.R)[1_code/r_scripts/03_create_spatial_object_with_point_count_locations.R]
-   3. [03_qpad_offsets.R](1_code/r_scripts/03_qpad_offsets.R)
+   1. [Fetch Bird Data from WildTrax](1_code/r_scripts/01_fetch_bird_data_from_WildTrax.R)
+   2. [Clean Bird Data](1_code/r_scripts/02_clean_bird_data.R)
+   3. [Create Spatial Object with Point Count Locations](1_code/r_scripts/03_create_spatial_object_with_point_count_locations.R)
+   4. [Calculate QPAD Offsets](1_code/r_scripts/04_qpad_offsets.R)
 2. [Extracting spatial covariates](documentation/spatial_covariates.md)
-   1. [extract_spatial_data.js](1_code/GEE/extract_spatial_data.js)
-   2. [summarize_covariates.R](1_code/r_scripts/3_summarize_covariates.R)
+   1. [Extract Spatial Data](1_code/GEE/extract_spatial_data.js)
+   2. [Summarize Covariates](1_code/r_scripts/05_summarize_covariates.R)
 3. [Statistical analyses](documentation/statistical_analyses.md)
-   1. [boosted_regression_trees.R](1_code/r_scripts/4_boosted_regression_trees.R)
-   2. [spatial_predictions.R](1_code/r_scripts/5_spatial_predictions.R)
-   3. [summarize_results.R](1_code/r_scripts/6_summarize_results.R)
+   1. [Perform Boosted Regression Trees Analysis](1_code/r_scripts/06_boosted_regression_trees.R)
+   2. [Summarize Results](1_code/r_scripts/07_summarize_results.R)
+   3. [Generate Spatial Predictions](1_code/r_scripts/08_spatial_predictions.R)
 4. [Model validation and random stratified sampling](documentation/random_stratified_sampling.md)
-   1. [random_stratified_sampling.R](1_code/r_scripts/7_random_stratified_sampling.R)
+   1. [Perform Random Stratified Sampling](1_code/r_scripts/09_random_stratified_sampling.R)
 5. [Building a web application using Google Earth Engine](documentation/gee_web_application.md)
-   1. [get_epicollect_data.R](1_code/r_scripts/get_epicollect_data.R)
-   2. [piwo_webapp.js](1_code/GEE/piwo_webapp.js)
-
+   1. [Get Shapefiles of Completed Fieldwork Data](1_code/r_scripts/completed_fieldwork.R)
+   2. [Build PIWO Web Application](1_code/GEE/piwo_webapp.js)
 
 ----
 **Citation:**
