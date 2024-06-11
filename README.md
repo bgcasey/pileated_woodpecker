@@ -29,7 +29,7 @@ Below is an outline of our methodological workflow.
 4. [Model validation and random stratified sampling](documentation/random_stratified_sampling.md)
    1. [09_random_stratified_sampling.R](1_code/r_scripts/09_random_stratified_sampling.R)
 5. [Building a web application using Google Earth Engine](documentation/gee_web_application.md)
-   1. [completed_fieldwork.R](1_code/r_scripts/get_epicollect_data.R)
+   1. [completed_fieldwork.R](1_code/r_scripts/completed_fieldwork.R)
    2. [piwo_webapp.js](1_code/GEE/piwo_webapp.js)
 
 
