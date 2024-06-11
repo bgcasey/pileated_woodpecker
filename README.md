@@ -10,13 +10,14 @@ Efficient compliance with the MBR 2022 requires an understanding of where Pileat
 
 A [web application](https://ee-bgcasey-piwomodels.projects.earthengine.app/view/pileatedwoodpecker) presents our latest predictive map, areas that we have searched for Pileated Woodpecker nest cavities, and known nest cavity locations. The predictive map will be validated and updated as new data comes in.
 
+![test](1_code/r_scripts/02_clean bird_data.R)
 
 Below is an outline of our methodological workflow. 
 
 1. [Sourcing and processing Pileated Woodpecker data](documentation/piwo_data.md)
    1. [01_fetch_bird_data_from_WildTrax.R](1_code/r_scripts/01_fetch_bird_data_from_WildTrax.R)
-   2. [02_clean_bird_data.R](1_code/r_scripts/02_clean bird_data.R)
-   4. [03_qpad_offsets.R](1_code/r_scripts/03_qpad_offsets.R)
+   2. [02_clean_bird_data.R](1_code/r_scripts/02_clean_bird_data.R)
+   3. [03_qpad_offsets.R](1_code/r_scripts/03_qpad_offsets.R)
 2. [Extracting spatial covariates](documentation/spatial_covariates.md)
    1. [extract_spatial_data.js](1_code/GEE/extract_spatial_data.js)
    2. [summarize_covariates.R](1_code/r_scripts/3_summarize_covariates.R)
