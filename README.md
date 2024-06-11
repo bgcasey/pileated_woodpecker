@@ -12,7 +12,7 @@ A [web application](https://ee-bgcasey-piwomodels.projects.earthengine.app/view/
 Below is an outline of our methodological workflow. 
 
 1. [Sourcing and processing Pileated Woodpecker data](documentation/piwo_data.md)
-   - [process_bird_data.R](1_code/r_scripts/1_process_bird_data.R)
+   - [01_fetch_bird_data_from_WildTrax.R](1_code/r_scripts/01_fetch_bird_data_from_WildTrax.R)
    - [qpad_offsets.R](1_code/r_scripts/2_qpad_offsets.R)
 2. [Extracting spatial covariates](documentation/spatial_covariates.md)
    - [extract_spatial_data.js](1_code/GEE/extract_spatial_data.js)
