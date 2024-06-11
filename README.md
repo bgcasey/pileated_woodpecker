@@ -13,7 +13,8 @@ Below is an outline of our methodological workflow.
 
 1. [Sourcing and processing Pileated Woodpecker data](documentation/piwo_data.md)
    - [01_fetch_bird_data_from_WildTrax.R](1_code/r_scripts/01_fetch_bird_data_from_WildTrax.R)
-   - [qpad_offsets.R](1_code/r_scripts/2_qpad_offsets.R)
+   - [02_clean_bird_data.R](1_code/r_scripts/02_clean_bird_data.R)
+   - [03_qpad_offsets.R](1_code/r_scripts/03_qpad_offsets.R)
 2. [Extracting spatial covariates](documentation/spatial_covariates.md)
    - [extract_spatial_data.js](1_code/GEE/extract_spatial_data.js)
    - [summarize_covariates.R](1_code/r_scripts/3_summarize_covariates.R)
