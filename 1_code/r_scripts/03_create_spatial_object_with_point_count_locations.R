@@ -31,16 +31,16 @@ ss_xy_4326 <- ss_xy %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
 
 ## 2.2 Transform coordinates ----
-# Convert the coordinates to meters (EPSG:3857)
-ss_xy_3857 <- ss_xy_4326 %>%
-  st_transform(crs = 3857) %>%
-  dplyr::mutate(x_3857 = sf::st_coordinates(.)[,1],
-                y_3857 = sf::st_coordinates(.)[,2]) %>%
+# Convert the coordinates to meters (EPSG:3978)
+ss_xy_3978 <- ss_xy_4326 %>%
+  st_transform(crs = 3978) %>%
+  dplyr::mutate(x_3978 = sf::st_coordinates(.)[,1],
+                y_33978 = sf::st_coordinates(.)[,2]) %>%
   dplyr::select(-c(lon, lat))
 
 # 3. Save ----
 save(ss_xy_4326, file = "0_data/manual/spatial/ss_xy_4326.rData")
 st_write(ss_xy_4326, "0_data/manual/spatial/ss_xy_4326.shp")
 
-save(ss_xy_3857, file = "0_data/manual/spatial/ss_xy_3857.rData")
-st_write(ss_xy_3857, "0_data/manual/spatial/ss_xy_3857.shp")
+save(ss_xy_3978, file = "0_data/manual/spatial/ss_xy_3978.rData")
+st_write(ss_xy_3978, "0_data/manual/spatial/ss_xy_3978.shp")
