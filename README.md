@@ -4,9 +4,11 @@
 
 [![DOI](https://zenodo.org/badge/648137985.svg)](https://zenodo.org/doi/10.5281/zenodo.11396172) ![In Progress](https://img.shields.io/badge/Status-In%20Progress-yellow)
 
-The Migratory Bird Convention (MBCA) act is a law intended to limit the accidental destruction of nests from human activities. Recent amendments for Pileated Woodpecker cavity nests stipulate that nests must be protected year-round and those not being used must be protected for 36 months from last known use before removal is allowed. For industry to operate efficiently and not violate these regulations requires an understanding of where Pileated Woodpecker are located to ensure they are in compliance. This project provides a set of tools for helping industry identify where Pileated Woodpecker are likely to be and where additional monitoring is and is not needed to find nests.
+The _Migratory Bird Convention Act_ (MBCA) and the _Migratory Birds Regulations_, 2022 (MBR 2022) aim to protect and conserve migratory birds, both as populations and as individuals. Recent amendments to the MBR 2022 clarify the year-round protection attributed to certain species, including the Pileated Woodpecker, to limit the destruction of nests that appear unoccupied, but remain valuable ecologically. As such, the MBR 2022 now stipulates that, among others, the nesting cavities of Pileated woodpeckers are protected year-round. Unoccupied nesting cavities must remain protected for a designated wait period of 36 months before removal or destruction is allowed. 
 
-A [web application](https://ee-bgcasey-piwomodels.projects.earthengine.app/view/pileatedwoodpecker) presents our latest predictive map, areas that we have searched for Pileated Woodpecker nest cavities, and known nest cavity locations. 
+Efficient compliance with the MBR 2022 requires an understanding of where Pileated Woodpecker are located. This project provides a set of tools to help industry identify where Pileated Woodpecker are likely to be and where additional monitoring is and is not needed to find nests.
+
+A [web application](https://ee-bgcasey-piwomodels.projects.earthengine.app/view/pileatedwoodpecker) presents our latest predictive map, areas that we have searched for Pileated Woodpecker nest cavities, and known nest cavity locations. The predictive map will be validated and updated as new data comes in.
 
 
 Below is an outline of our methodological workflow. 
