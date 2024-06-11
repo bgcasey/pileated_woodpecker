@@ -15,22 +15,23 @@ A [web application](https://ee-bgcasey-piwomodels.projects.earthengine.app/view/
 Below is an outline of our methodological workflow. 
 
 1. [Sourcing and processing Pileated Woodpecker data](documentation/piwo_data.md)
-   1. [01_fetch_bird_data_from_WildTrax.R](1_code/r_scripts/01_fetch_bird_data_from_WildTrax.R)
-   2. [02_clean_bird_data.R](1_code/r_scripts/02_clean_bird_data.R)
-   3. [03_create_spatial_object_with_point_count_locations.R](1_code/r_scripts/03_create_spatial_object_with_point_count_locations.R)
-   4. [04_qpad_offsets.R](1_code/r_scripts/04_qpad_offsets.R)
+   1. [fetch_bird_data_from_WildTrax.R](1_code/r_scripts/fetch_bird_data_from_WildTrax.R)
+   2. [clean_bird_data.R](1_code/r_scripts/clean_bird_data.R)
+   3. [create_spatial_object_with_point_count_locations.R](1_code/r_scripts/create_spatial_object_with_point_count_locations.R)
+   4. [qpad_offsets.R](1_code/r_scripts/qpad_offsets.R)
 2. [Extracting spatial covariates](documentation/spatial_covariates.md)
    1. [extract_spatial_data.js](1_code/GEE/extract_spatial_data.js)
-   2. [05_summarize_covariates.R](1_code/r_scripts/05_summarize_covariates.R)
+   2. [summarize_covariates.R](1_code/r_scripts/summarize_covariates.R)
 3. [Statistical analyses](documentation/statistical_analyses.md)
-   1. [06_boosted_regression_trees.R](1_code/r_scripts/06_boosted_regression_trees.R)
-   2. [07_summarize_results.R](1_code/r_scripts/07_summarize_results.R)
-   3. [08_spatial_predictions.R](1_code/r_scripts/08_spatial_predictions.R)
+   1. [boosted_regression_trees.R](1_code/r_scripts/boosted_regression_trees.R)
+   2. [summarize_results.R](1_code/r_scripts/summarize_results.R)
+   3. [spatial_predictions.R](1_code/r_scripts/spatial_predictions.R)
 4. [Model validation and random stratified sampling](documentation/random_stratified_sampling.md)
-   1. [09_random_stratified_sampling.R](1_code/r_scripts/09_random_stratified_sampling.R)
+   1. [random_stratified_sampling.R](1_code/r_scripts/random_stratified_sampling.R)
 5. [Building a web application using Google Earth Engine](documentation/gee_web_application.md)
    1. [completed_fieldwork.R](1_code/r_scripts/completed_fieldwork.R)
    2. [piwo_webapp.js](1_code/GEE/piwo_webapp.js)
+
 
 
 ----
