@@ -13,10 +13,10 @@ library(sf) #polygons and points
 library(tidyverse) #data manipulation
 
 ##Import data----
-r<-rast("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1_Projects/pileated_woodpecker_lidar/3_output/predict_rasters/brt_ls_hlc_terrain_canopy_29_2_p_piwo.tif")
+r<-rast("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1_Projects/pileated_woodpecker/3_output/predict_rasters/brt_ls_hlc_terrain_canopy_29_2_p_piwo.tif")
 
 #pipeline path
-path<-st_read("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1_Projects/pileated_woodpecker_lidar/0_data/external/Spatial/CanadianNatural/17324_Pathways_GlobalRaymac/Shapefiles/17324_ProjectBoundary_nad83_csrs_z12.shp")
+path<-st_read("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1_Projects/pileated_woodpecker/0_data/external/Spatial/CanadianNatural/17324_Pathways_GlobalRaymac/Shapefiles/17324_ProjectBoundary_nad83_csrs_z12.shp")
 # horizon<-st_read("0_data/external/JCR_PIWOAssessment/JCR_PIWOAssessmentArea.shp")
 ##////////////////////////////////////////////////////////////////
 # #Resample raster to 100x100 ----
@@ -33,8 +33,8 @@ path<-st_read("~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/My Drive/1
 ## Define breaks and labels for reclassification----
 reclass_matrix <- matrix(c(0, .05, 0,
                           .05, .4, 1,  # .05-20 mapped to 1 (poor)
-                           .4, .7, 2,  # 20-80 mapped to 2 (moderate)
-                           .7, 1, 3  # 80-100 mapped to 3 (good)
+                           .4, .7, 2,  # 20-70 mapped to 2 (moderate)
+                           .7, 1, 3  # 70-100 mapped to 3 (good)
 ), byrow=TRUE, ncol=3)
 
 ## Reclassify the raster
