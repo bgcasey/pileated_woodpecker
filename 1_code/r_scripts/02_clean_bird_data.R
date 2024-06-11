@@ -101,16 +101,16 @@ w <- wildtrax_all %>%
   # Remove unsuitable projects according
   anti_join(instructions) %>%
   # Create additional temporal fields and modify some spatial fields
-  mutate(location_buffer_m = ifelse(is.na(location_buffer_m), 
+  mutate(location_buffer_m = ifelse(!is.finite(location_buffer_m), 
                                     0, location_buffer_m),
          ordinalDay = yday(date),
          year = year(date),
          month = month(date),
          start_time = hour(date) + minute(date) / 60,
          date = ymd(str_sub(date, 1, 10)),
-         tz = tz_lookup_coords(latitude, longitude, 
+         tz = tz_lookup_coords(latitude, longitude,
                                method = "accurate"),
-         lat = latitude, 
+         lat = latitude,
          lon = longitude) %>%
   # Filter based on various conditions
   filter(
@@ -128,11 +128,14 @@ w <- wildtrax_all %>%
     organization != "ABMI",
     # Remove surveys with no location
     !is.na(latitude),
-    latitude > 0, 
+    latitude > 0,
     longitude < 0,
     year(date) > 1900,
     # Remove midnight PC surveys
-    !(hour(date) == 0 & survey_type == "PC"),
+    # !(hour(date) == 0 & survey_type == "PC")
+    # Remove evening surveys
+    start_time > 2 & start_time < 12,
+    # ,
     # Remove locations that are within a buffer
     location_buffer_m == 0
   ) %>%
@@ -153,6 +156,7 @@ w <- wildtrax_all %>%
   mutate(x_3857 = sf::st_coordinates(.)[,1], 
          y_3857 = sf::st_coordinates(.)[,2]) %>%
   st_set_geometry(NULL)
+
 
 ## 3.1 Calculate time since sunrise ----
 tzs <- unique(w$tz)
@@ -186,8 +190,22 @@ colnms <- c("organization", "project", "project_id", "survey_type",
 wildtrax_cleaned <- w %>%
   dplyr::select(all_of(colnms))
 
-# 5. Save ----
+# 5. Convert to wide format ----
+wildtrax_cleaned_piwo<-wildtrax_cleaned %>%
+  mutate(individual_count = as.numeric(individual_count)) %>%
+  pivot_wider(names_from = species_code, 
+              values_from = individual_count, 
+              values_fn = list(individual_count = sum)) %>%
+  mutate(PIWO = replace_na(PIWO, 0))%>%
+  dplyr::select(c(1:28, "PIWO"))
+
+# 6. Save ----
 save(wildtrax_cleaned, 
      file = paste0("0_data/manual/wildtrax_cleaned_", 
                    Sys.Date(), ".rData"))
+
+save(wildtrax_cleaned_piwo, 
+     file = paste0("0_data/manual/wildtrax_cleaned_piwo_", 
+                   Sys.Date(), ".rData"))
+
 
