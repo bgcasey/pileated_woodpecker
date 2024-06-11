@@ -5,13 +5,13 @@
 # description: "This script is designed to fetch bird data from the 
 # WildTrax platform. It logs into WildTrax using 
 # credentials stored in a user config file. The script proceeds to 
-# fetch all data  by sensor type: PC and ARU. For each sensor 
-# type. The output of this module is two .rData files containing 
-# bird detection data from WildTrax separated by sensor type 
-# (PC and ARU). The files are named wildtrax_raw_pc_<date>.rData and 
+# fetch all data  by sensor type: Point coint and ARU. 
+# The output of this module is two .rData files containing 
+# bird detection data from WildTrax separated by sensor type. 
+# The files are named wildtrax_raw_pc_<date>.rData and 
 # wildtrax_raw_aru_<date>.rData, where <date> is the current system 
-# date. These files can be loaded into an R environment for 
-# further analysis."
+# date. These files can be loaded into an R environment for cleaning
+# and further analysis."
 # ---
 
 # 1. Setup ----
@@ -20,9 +20,8 @@
 # If not installed, uncomment the lines below to install
 # install.packages("remotes")
 # remotes::install_github("ABbiodiversity/wildRtrax")
-
-library(wildRtrax)
-library(tidyverse)
+library(tidyverse) # data manipulation and visualization
+library(wildRtrax) # interacting with the WildTrax platform
 
 ## 1.2 Login to WildTrax ----
 # The config file contains the login credentials. 
@@ -54,6 +53,8 @@ my_report_pc <- wt_get_download_summary(sensor_id = "PC") %>%
     mutate(df, individual_count = as.character(individual_count)))) %>%
   mutate(data = lapply(data, function(df) 
     mutate(df, survey_id = as.character(survey_id)))) %>%
+  mutate(data = lapply(data, function(df) 
+    mutate(df, observer = as.character(observer)))) %>%
   dplyr::select(-class) %>%
   unnest(col = data) %>%
   mutate(survey_type="PC")
@@ -78,6 +79,8 @@ my_report_aru <- wt_get_download_summary(sensor_id = "PC") %>%
   filter(class!="NULL") %>%
   mutate(data = lapply(data, function(df) 
     mutate(df, individual_count = as.character(individual_count)))) %>%
+    mutate(data = lapply(data, function(df) 
+    mutate(df, observer = as.character(observer)))) %>%
   dplyr::select(-class) %>%
   unnest(col=data) %>%
   mutate(survey_type="ARU")
@@ -85,10 +88,10 @@ my_report_aru <- wt_get_download_summary(sensor_id = "PC") %>%
 # 3. Save ----
 wildtrax_raw_pc <- my_report_pc
 save(wildtrax_raw_pc, 
-     file=paste0("0_data/manual/wildtrax_raw_pc_", 
+     file=paste0("0_data/manual/response/wildtrax_raw_pc_", 
                  Sys.Date(), ".rData"))
 
 wildtrax_raw_aru <- my_report_aru
 save(wildtrax_raw_aru, 
-     file=paste0("0_data/manual/wildtrax_raw_aru_", 
+     file=paste0("0_data/manual/response/wildtrax_raw_aru_", 
                  Sys.Date(), ".rData"))
