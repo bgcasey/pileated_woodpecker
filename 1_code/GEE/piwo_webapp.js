@@ -83,7 +83,7 @@ var piwoOccLayer = ui.Map.Layer(piwoOcc, visOccu,
   "Pileated woodpecker occupancy").setShown(1).setOpacity(.7);        
 
 // Define the visualization parameters for the reclassed map
-var visReclass = {min: 0, max: 1, palette: rTerrain04.reverse()};   
+var visReclass = {min: 0, max: 4, palette: rTerrain04.reverse()};   
 
 var piwoReclassLayer = ui.Map.Layer(piwoReclass, visReclass, 
   "Pileated woodpecker habitat suitability").setShown(1)
@@ -177,9 +177,10 @@ Map.add(legendRaster);
 
 // Reclassified raster
 // Define the values and their corresponding colors
-var values = [1, 2, 3];
-var colors = ["#EBB25E", "#8BD000", "#00A600"];
+var values = [0, 1, 2, 3];
+var colors = ["F2F2F2", "#EBB25E", "#8BD000", "#00A600"];
 var labels = [
+  "unsuitable",
   "low suitability", 
   "moderate suitability", 
   "high suitability"
@@ -364,39 +365,62 @@ var title = ui.Label('Pileated Woodpecker Nest Detection', {
 
 var authors = ui.Label('Dr. Brendan Casey, Simran Baines, Dr. Erin Bayne', {
   fontWeight: 'bold',
-  margin: '0px 0px 10px 8px'
+  margin: '0px 0px 15px 8px'
 });
 
-var description = ui.Label(
-  'The Migratory Bird Convention (MBCA) act is a law intended to limit ' +
-  'the accidental destruction of nests from human activities. Recent ' +
-  'amendments for Pileated Woodpecker cavity nests ' +
-  'stipulate that nests must be protected year-round and those not being ' +
-  'used must be protected for 36 months from last known use before removal ' +
-  'is allowed. For industry to operate efficiently and not violate these ' +
-  'regulations requires an understanding of where Pileated Woodpecker are ' +
-  'located to ensure they are in compliance. This project provides a set of ' +
-  'tools for helping industry identify where Pileated Woodpecker are likely ' +
-  'to be and where additional monitoring is and is not needed to find nests.'
+var description1 = ui.Label(
+  'The Migratory Bird Convention Act (MBCA) and the ' +
+  'Migratory Birds Regulations, 2022 (MBR 2022) aim to ' +
+  'protect and conserve migratory birds, both as populations ' +
+  'and as individuals. Recent amendments to the MBR 2022 ' +
+  'clarify the year-round protection attributed to certain ' +
+  'species, including the Pileated Woodpecker, to limit the ' +
+  'destruction of nests that appear unoccupied but remain ' +
+  'valuable ecologically. As such, the MBR 2022 now ' +
+  'stipulates that, among others, the nesting cavities of ' +
+  'Pileated woodpeckers are protected year-round. Unoccupied ' +
+  'nesting cavities must remain protected for a designated ' +
+  'wait period of 36 months before removal or destruction is ' +
+  'allowed.',
+  {margin: '0px 30px 15px 8px'}
 );
 
 var description2 = ui.Label(
-  'Here we present our latest predictive map, areas that we have searched ' +
-  'for Pileated Woodpecker nest cavities, and known nest cavity locations. ' +
-  'Data and survey protocols are available on request through the links ' +
-  'provided below. Please direct all correspondence to Dr. Brendan '+ 
-  'Casey (bgcasey@ualberta.ca)'
+  'Efficient compliance with the MBR 2022 requires an ' +
+  'understanding of where Pileated Woodpecker are located. ' +
+  'This project provides a set of tools to help industry ' +
+  'identify where Pileated Woodpecker are likely to be and ' +
+  'where additional monitoring is and is not needed to find ' +
+  'nests. Here we present our latest predictive map, areas ' +
+  'that we have searched for Pileated Woodpecker nest ' +
+  'cavities, and known nest cavity locations. The predictive ' +
+  'map will be validated and updated as new data comes in. ' +
+  'Data and survey protocols are available on request ' +
+  'through the links provided below. Please direct all ' +
+  'correspondence to Dr. Brendan Casey (bgcasey@ualberta.ca)',  
+  {margin: '0px 30px 15px 8px'}
 );
 
-// var github = ui.Label('https://github.com/bgcasey/pileated_woodpecker_sdm', {
-//   color: '0000EE'
-// }, 'https://github.com/bgcasey/pileated_woodpecker_sdm');
+var github = ui.Label('https://github.com/bgcasey/pileated_woodpecker', {
+  color: '0000EE',
+  margin: '0px 0px 15px 8px'
+}, 'https://github.com/bgcasey/pileated_woodpecker');
+
+// var doiLink = ui.Label({
+//   value: 'DOI: 10.5281/zenodo.11396172',
+//   style: {
+//     color: '0000EE',
+//     margin: '0px 0px 10px 8px'
+//   }
+// }).setUrl('https://zenodo.org/doi/10.5281/zenodo.11396172');
 
 var submitData = ui.Label('Submit Data', {
   color: '0000EE'
 }, 'https://docs.google.com/forms/d/e/1FAIpQLSef4UjSEU1yvH9As-'+
-   'J1GekMhWCnC211ky7-OCsjx4IhgwHLQg/viewform?usp=sf_link'
-   );
+   'J1GekMhWCnC211ky7-OCsjx4IhgwHLQg/viewform?usp=sf_link',
+  {margin: '0px 0px 0px 20px'
+});
+
 
 var requestData = ui.Label(
   'Request Data', 
@@ -404,24 +428,52 @@ var requestData = ui.Label(
     color: '0000EE'
   }, 
   'https://docs.google.com/forms/d/e/1FAIpQLScHc8rUl5wZnR4b3QPCCkv0cGcFO9wXX-' +
-  'bRzneLQSTzGb0mEQ/viewform?usp=sf_link'
-  );
+  'bRzneLQSTzGb0mEQ/viewform?usp=sf_link',
+    {margin: '0px 0px 15px 20px'
+});
+
+var citationHeader = ui.Label('Data citation:', {
+  fontWeight: 'bold',
+  margin: '0px 0px 0px 8px'
+});
+
+var citation = ui.Label(
+  'Brendan Casey, Bayne, E., & Baines, S. (2024). ' +
+  'Improving Pileated Woodpecker nest cavity detection (v0.10). ' +
+  'Zenodo. https://doi.org/10.5281/zenodo.11396172',
+  {
+    color: '000000',
+    margin: '0px 30px 10px 8px'
+  }
+);
+
 
 function createSeparator(color) {
   return ui.Panel([
     ui.Label({
       value: '______________________________________________________________________',
-      style: {fontWeight: 'bold', color: color}
+      style: {fontWeight: 'bold', color: color, margin: '0px 30px 10px 8px'}
     })
   ]);
 }
 
+// // Add a label to the panel
+// var label = ui.Label('In Progress', {
+//   fontSize: '24px',
+//   fontWeight: 'bold',
+//   color: 'red'
+// });
+
+
 // Add sections to the main panel
-mainPanel.add(title)
+mainPanel
+  // .add(label)
+  .add(title)
   .add(authors)
-  .add(description)
-  .add(description2)
   // .add(github)
+  // .add(doiLink)
+  .add(description1)
+  .add(description2)
   .add(createSeparator('2D333C'))
   .add(checkboxMaster)
   .add(createSeparator('FFFFFF'))
@@ -430,6 +482,8 @@ mainPanel.add(title)
   .add(requestData)
   .add(submitData)
   .add(createSeparator('FFFFFF'))
+  .add(citationHeader)
+  .add(citation)
 
 /**
  * SECTION 7: Customize Basemap
