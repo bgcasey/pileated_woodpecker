@@ -14,7 +14,7 @@ library(tidyverse) # data manipulation and visualization
 
 ## 1.2 Import data ----
 # Load the cleaned Wildtrax data
-load("0_data/manual/wildtrax_cleaned_piwo_2024-06-11.rData")
+load("0_data/manual/response/wildtrax_cleaned_piwo_2024-06-13.rData")
 
 # 2. Get XY coordinates ----
 
@@ -40,7 +40,7 @@ ss_xy_3978 <- ss_xy_4326 %>%
 
 # 3. Save ----
 save(ss_xy_4326, file = "0_data/manual/spatial/ss_xy_4326.rData")
-st_write(ss_xy_4326, "0_data/manual/spatial/ss_xy_4326.shp")
+st_write(ss_xy_4326, "0_data/manual/spatial/ss_xy_4326.shp", append=FALSE)
 
 save(ss_xy_3978, file = "0_data/manual/spatial/ss_xy_3978.rData")
-st_write(ss_xy_3978, "0_data/manual/spatial/ss_xy_3978.shp")
+st_write(ss_xy_3978, "0_data/manual/spatial/ss_xy_3978.shp", append=FALSE)
