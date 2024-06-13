@@ -40,7 +40,9 @@ ss_xy_3978 <- ss_xy_4326 %>%
 
 # 3. Save ----
 save(ss_xy_4326, file = "0_data/manual/spatial/ss_xy_4326.rData")
-st_write(ss_xy_4326, "0_data/manual/spatial/ss_xy_4326.shp", append=FALSE)
+st_write(ss_xy_4326, "0_data/manual/spatial/ss_xy_4326.shp", 
+         append = FALSE)
 
 save(ss_xy_3978, file = "0_data/manual/spatial/ss_xy_3978.rData")
-st_write(ss_xy_3978, "0_data/manual/spatial/ss_xy_3978.shp", append=FALSE)
+st_write(ss_xy_3978, "0_data/manual/spatial/ss_xy_3978.shp", 
+         append = FALSE)
