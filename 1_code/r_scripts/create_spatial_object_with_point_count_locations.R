@@ -35,7 +35,7 @@ ss_xy_4326 <- ss_xy %>%
 ss_xy_3978 <- ss_xy_4326 %>%
   st_transform(crs = 3978) %>%
   dplyr::mutate(x_3978 = sf::st_coordinates(.)[,1],
-                y_33978 = sf::st_coordinates(.)[,2]) %>%
+                y_3978 = sf::st_coordinates(.)[,2]) %>%
   dplyr::select(-c(lon, lat))
 
 # 3. Save ----
