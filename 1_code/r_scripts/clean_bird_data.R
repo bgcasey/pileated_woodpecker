@@ -68,7 +68,7 @@ wildtrax_raw_aru_1 <- wildtrax_raw_aru %>%
            minutes == 9 ~ "0-1-2-3-4-5-6-7-8-9min",
            minutes == 10 ~ "0-1-2-3-4-5-6-7-8-9-10min"),
          survey_distance_method = "0m-INF-ARU",
-         detection_distance = "0m-INF-ARU",
+         detection_distance = "0m-INF",
          detection_time = as.character(detection_time)) %>%
   dplyr::select(any_of(colnms))
 
@@ -85,61 +85,65 @@ wildtrax_raw_pc_1 <- wildtrax_raw_pc %>%
 wildtrax_all <- dplyr::bind_rows(wildtrax_raw_pc_1, 
                                  wildtrax_raw_aru_1)
 
-# 3. Filter and clean data and calculate new fields ---- 
+# 3. Filter and clean data and calculate new fields ----
+## 3.1 Join with aves data to keep only bird records ----
 w <- wildtrax_all %>% 
-  # Join with aves data to keep only bird records
-  semi_join(aves) %>%
-  # Group by project_id
+  semi_join(aves)
+
+## 3.2 Remove single unsuitable projects ----
+w <- w %>%
   group_by(project_id) %>%
-  # Remove single species projects that are not PIWO related
   filter((n_distinct(species_code) > 2) | 
            (n_distinct(species_code) < 2 & species_code=="PIWO")) %>%
-  # Ungroup data
   ungroup() %>%
-  # Remove duplicate rows
   distinct() %>%
-  # Remove unsuitable projects according
-  anti_join(instructions) %>%
-  # Create additional temporal fields and modify some spatial fields
+  anti_join(instructions)
+
+## 3.3 Modify fields add new temporal fields ----
+w <- w %>%
   mutate(location_buffer_m = ifelse(!is.finite(location_buffer_m), 
                                     0, location_buffer_m),
          ordinalDay = yday(date),
          year = year(date),
          month = month(date),
          start_time = hour(date) + minute(date) / 60,
+         start_time_hhmm = format(
+           as.POSIXct(date, format = "%Y-%m-%d %H:%M:%S"), 
+           format = "%H:%M"),
          date = ymd(str_sub(date, 1, 10)),
          tz = tz_lookup_coords(latitude, longitude,
                                method = "accurate"),
          lat = latitude,
-         lon = longitude) %>%
-  # Filter based on various conditions
+         lon = longitude,
+         max_distance = str_remove(survey_distance_method, "-ARU"),
+         max_distance = str_extract(max_distance, "(?<=-)[^-]+$"),
+         max_distance = ifelse(str_detect(max_distance, "m"), 
+                               str_remove(max_distance, "m"), 
+                               max_distance),
+         max_distance = ifelse(max_distance == "INF", Inf, 
+                               as.numeric(max_distance))
+  )
+
+## 3.4 Filter data ----
+w <- w %>%
   filter(
-    # Remove outliers for day of year (use 99% quantile)
     ordinalDay > quantile(ordinalDay, 0.005),
     ordinalDay < quantile(ordinalDay, 0.995),
-    # Remove surveys with unknown survey time
     !str_sub(date, -8, -1) %in% c("00:00:01", "00:01:01"),
     !is.na(date),
-    # Take out BBS. It's not useful for removal or distance sampling
     project != "BAM-BBS",
-    # Remove training data
     organization != "BU-TRAINING",
-    # Remove ABMI data since the locations are not accurate
     organization != "ABMI",
-    # Remove surveys with no location
     !is.na(latitude),
     latitude > 0,
     longitude < 0,
     year(date) > 1900,
-    # Remove midnight PC surveys
-    # !(hour(date) == 0 & survey_type == "PC")
-    # Remove evening surveys
     start_time > 2 & start_time < 12,
-    # ,
-    # Remove locations that are within a buffer
     location_buffer_m == 0
-  ) %>%
-  # Calculate survey effort (n_surveys * max_duration / 60)
+  )
+
+## 3.5 Calculate survey effort (n_surveys * max_duration / 60) ----
+w <- w %>%
   select(project_id, survey_type, location, 
          survey_duration_method, survey_distance_method, 
          year, date, max_duration) %>%
@@ -149,16 +153,18 @@ w <- wildtrax_all %>%
   mutate(n_surveys = n()) %>%
   ungroup() %>%
   mutate(survey_effort = n_surveys * max_duration / 60) %>%
-  full_join(w) %>%
-  # Add XY coordinates that are in meters 
+  full_join(w)
+
+## 3.6 Transform spatial coordinates ----
+w <- w %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE) %>%
-  st_transform(crs = 3857) %>%
-  mutate(x_3857 = sf::st_coordinates(.)[,1], 
-         y_3857 = sf::st_coordinates(.)[,2]) %>%
+  st_transform(crs = 3978) %>%
+  mutate(x_3978 = sf::st_coordinates(.)[,1],
+         y_3978 = sf::st_coordinates(.)[,2]) %>%
   st_set_geometry(NULL)
 
-
-## 3.1 Calculate time since sunrise ----
+  
+## 3.7 Calculate time since sunrise ----
 tzs <- unique(w$tz)
 tzs <- Filter(function(x) !is.na(x), tzs)
 
@@ -177,35 +183,41 @@ for(i in 1:length(tzs)){
 sun <- do.call(rbind, sun.list)
 w <- sun
 
+save(w, file="2_pipeline/tmp/w.rData")
+
 # 4. Select and order columns ----
 colnms <- c("organization", "project", "project_id", "survey_type", 
-            "location", "location_buffer_m", "lon", "lat", "x_3857", 
-            "y_3857", "date", "ordinalDay", "year", "month", 
+            "location", "location_buffer_m", "lon", "lat", "x_3978", 
+            "y_3978", "date", "ordinalDay", "year", "month", 
             "start_time", "tz", "sunrise", "hssr", "task_method", 
-            "survey_distance_method", "survey_duration_method", 
-            "max_duration", "n_surveys", "survey_effort", 
-            "detection_time", "detection_distance", "species_code", 
-            "individual_order", "individual_count", "vocalization") 
+            "survey_distance_method", "max_distance", 
+            "survey_duration_method", "max_duration", "n_surveys", 
+            "survey_effort", "detection_time", "detection_distance", 
+            "species_code", "individual_order", "individual_count", 
+            "vocalization") 
 
 wildtrax_cleaned <- w %>%
   dplyr::select(all_of(colnms))
 
 # 5. Convert to wide format ----
-wildtrax_cleaned_piwo<-wildtrax_cleaned %>%
+wildtrax_cleaned_wide<-wildtrax_cleaned %>%
   mutate(individual_count = as.numeric(individual_count)) %>%
   pivot_wider(names_from = species_code, 
               values_from = individual_count, 
               values_fn = list(individual_count = sum)) %>%
-  mutate(PIWO = replace_na(PIWO, 0))%>%
-  dplyr::select(c(1:28, "PIWO"))
+  mutate(PIWO = replace_na(PIWO, 0)) 
+
+## 5.1 Keep species of interest ----
+wildtrax_cleaned_piwo <- wildtrax_cleaned_wide %>%
+  dplyr::select(all_of(intersect(colnms, 
+                                 names(wildtrax_cleaned_wide))), 
+                "PIWO")
 
 # 6. Save ----
 save(wildtrax_cleaned, 
-     file = paste0("0_data/manual/wildtrax_cleaned_", 
+     file = paste0("0_data/manual/response/wildtrax_cleaned_", 
                    Sys.Date(), ".rData"))
 
 save(wildtrax_cleaned_piwo, 
-     file = paste0("0_data/manual/wildtrax_cleaned_piwo_", 
+     file = paste0("0_data/manual/response/wildtrax_cleaned_piwo_", 
                    Sys.Date(), ".rData"))
-
-
