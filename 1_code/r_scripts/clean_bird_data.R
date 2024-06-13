@@ -183,14 +183,14 @@ for(i in 1:length(tzs)){
 sun <- do.call(rbind, sun.list)
 w <- sun
 
-save(w, file="2_pipeline/tmp/w.rData")
+# save(w, file="2_pipeline/tmp/w.rData")
 
 # 4. Select and order columns ----
 colnms <- c("organization", "project", "project_id", "survey_type", 
             "location", "location_buffer_m", "lon", "lat", "x_3978", 
             "y_3978", "date", "ordinalDay", "year", "month", 
-            "start_time", "tz", "sunrise", "hssr", "task_method", 
-            "survey_distance_method", "max_distance", 
+            "start_time", "start_time_hhmm", "tz", "sunrise", "hssr", 
+            "task_method", "survey_distance_method", "max_distance", 
             "survey_duration_method", "max_duration", "n_surveys", 
             "survey_effort", "detection_time", "detection_distance", 
             "species_code", "individual_order", "individual_count", 
@@ -198,6 +198,9 @@ colnms <- c("organization", "project", "project_id", "survey_type",
 
 wildtrax_cleaned <- w %>%
   dplyr::select(all_of(colnms))
+
+rm(w)
+gc()
 
 # 5. Convert to wide format ----
 wildtrax_cleaned_wide<-wildtrax_cleaned %>%
