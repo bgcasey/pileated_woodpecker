@@ -2,12 +2,15 @@
 # title: "Tune models"
 # author: "Brendan Casey"
 # created: "2024-06-10"
-# description: "This script tunes bossted regression tree models by
-# using a hyperparameter grid to systematically evaluate combinations 
-# of model parameters. Code is based on  
-# https://uc-r.github.io/gbm_regression and Kuhn, M., & Johnson, K. 
-# (2013). Applied predictive modeling (Vol. 26, p. 13).
-# New York: Springer.
+# description: >
+#   "This script tunes boosted regression tree models by
+#   using a hyperparameter grid to systematically evaluate
+#   combinations of model parameters. Code is based on
+#   https://uc-r.github.io/gbm_regression and Kuhn, M., &
+#   Johnson, K. (2013). Applied predictive modeling (Vol.
+#   26, p. 13). New York: Springer. It produces a dataframe
+#   of models using different parameter combinations sorted
+#   by RMSE."
 # ---
 
 # 1. Setup ----
