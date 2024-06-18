@@ -74,5 +74,12 @@ save(bird_cov, file=paste0("0_data/manual/formatted_for_models/bird_cov_cleaned_
 write_csv(bird_cov, file=paste0("0_data/manual/formatted_for_models/bird_cov_cleaned_", format(Sys.Date(), "%Y%m%d"), ".csv"))
 
 ##////////////////////////////////////////////////////////////////
+# Prepare data for models ----
+# Should be one response column and the rest variable columns. Should be in a dataframe. 
 
+#create an offset dataframe
+o <- as.data.frame(df1$PIWO_offset)%>%rename(PIWO_offset=`df1$PIWO_offset`)
+o <- df1$PIWO_offset
 
+save(offset, bd_cov,
+     "0_data/manual/formatted_for_models/data_for_models.rData")

@@ -2,8 +2,8 @@
 # title: "Create spatial object with point count locations"
 # author: "Brendan Casey"
 # created: "2024-02-06"
-# description: "This script generates shapefiles for point count 
-# locations "
+# description: >
+#   "This script generates shapefiles for point count locations."
 # ---
 
 # 1. Setup ----

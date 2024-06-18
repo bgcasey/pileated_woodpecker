@@ -2,20 +2,20 @@
 # title: "Gather Bird Data from WildTrax"
 # author: "Brendan Casey"
 # created: "2024-01-13"
-# description: "This script is designed to fetch bird data from the 
-# WildTrax platform. It logs into WildTrax using 
-# credentials stored in a user config file. The script proceeds to 
-# fetch all data  by sensor type: Point coint and ARU. 
-# The output of this module is two .rData files containing 
-# bird detection data from WildTrax separated by sensor type. 
-# The files are named wildtrax_raw_pc_<date>.rData and 
-# wildtrax_raw_aru_<date>.rData, where <date> is the current system 
-# date. These files can be loaded into an R environment for cleaning
-# and further analysis."
+# description: >
+#   "This script is designed to fetch bird data from the
+#   WildTrax platform. It logs into WildTrax using
+#   credentials stored in a user config file. The script
+#   proceeds to fetch all data by sensor type: Point count
+#   and ARU. The output of this module is two .rData files
+#   containing bird detection data from WildTrax separated
+#   by sensor type. The files are named wildtrax_raw_pc_<date>.rData
+#   and wildtrax_raw_aru_<date>.rData, where <date> is the
+#   current system date. These files can be loaded into an R
+#   environment for cleaning and further analysis."
 # ---
 
 # 1. Setup ----
-
 ## 1.1 Load packages ----
 # If not installed, uncomment the lines below to install
 # install.packages("remotes")
@@ -30,7 +30,6 @@ source(config)
 wt_auth()
 
 # 2. Fetch data from WildTrax by sensor type: PC and ARU ---- 
-
 ## 2.1 Point count data ----
 # Get the summary of downloads for the point counts. Filter for PC 
 # sensor data,download the report for each project, and store in a 

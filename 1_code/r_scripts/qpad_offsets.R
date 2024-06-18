@@ -2,13 +2,15 @@
 # title: "Get QPAD offsets"
 # author: "Brendan Casey"
 # created: "September 6, 2023"
-# description: "This script calculates QPAD offsets for Pileated 
-# Woodpecker detections. The offsets are joined to the cleaned 
-# bird dataframe and saved as 
-# "wildtrax_cleaned_piwo_with_offset_<date>.rData" where <date> is 
-# the current system date". More information on QPAD (including code, 
-# functions, and package information) can be found at 
-# https://github.com/borealbirds/qpad-offsets.
+# description: >
+#   "This script calculates QPAD offsets for Pileated
+#   Woodpecker detections. The offsets are joined to the
+#   cleaned bird dataframe and saved as
+#   'wildtrax_cleaned_piwo_with_offset_<date>.rData' where
+#   <date> is the current system date. More information on
+#   QPAD (including code, functions, and package
+#   information) can be found at
+#   https://github.com/borealbirds/qpad-offsets."
 # ---
 
 # 1. Setup ----

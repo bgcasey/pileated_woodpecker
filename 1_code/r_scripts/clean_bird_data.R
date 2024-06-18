@@ -2,12 +2,14 @@
 # title: "Clean bird data"
 # author: "Brendan Casey"
 # created: "2024-01-13"
-# description: "This script cleans and processes the raw ARU and 
-# point count data fetched from WildTrax in 
-# '01_gather_bird_data_from_WildTrax.R'. It filters and merges 
-# the data, and calculates new spatial and temporal fields. The 
-# cleaned data is then saved as wildtrax_cleaned_<date>.rData 
-# where <date> is the current system date"
+# description: >
+#   "This script cleans and processes the raw ARU and
+#   point count data fetched from WildTrax in
+#   '01_gather_bird_data_from_WildTrax.R'. It filters and
+#   merges the data, and calculates new spatial and temporal
+#   fields. The cleaned data is then saved as
+#   wildtrax_cleaned_<date>.rData where <date> is the
+#   current system date."
 # ---
 
 # 1. Setup ----
