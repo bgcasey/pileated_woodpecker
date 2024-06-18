@@ -58,3 +58,48 @@ crs(ua) <- "EPSG:4326"  # WGS 84
 
 # Write the raster to a new GeoTIFF file
 writeRaster(ua, "~/path/to/output/UA_Logo_Green_RGB_GeoTIFF.tiff", format = "GTiff")
+
+
+
+#-------
+# dummy data ----
+# Adjust the number of rows to 5000 for the dummy dataframe
+set.seed(123) # For reproducibility
+
+# Generate covariates
+cov_1 = runif(500, 0, 100) # Continuous covariate
+cov_2 = rnorm(500, 50, 10) # Continuous covariate
+cov_3 = sample(1:10, 500, replace = TRUE) # Discrete covariate
+cov_4 = rnorm(500, 0, 1) # Continuous covariate
+cov_5 = runif(500, -50, 50) # Continuous covariate
+
+# Calculate a linear combination of covariates
+linear_combination = -2 + 0.05 * cov_1 - 0.04 * cov_2 + 0.5 * cov_3 + 
+  0.1 * cov_4 - 0.02 * cov_5
+
+# Apply logistic function to get probabilities
+probabilities = 1 / (1 + exp(-linear_combination))
+
+# Generate PIWO based on probabilities
+PIWO = rbinom(500, 1, probabilities)
+
+# Create the dataframe
+dummy_df <- data.frame(
+  PIWO = PIWO,
+  PIWO_offset = rnorm(500, 0, 1),
+  cov_1 = cov_1,
+  cov_2 = cov_2,
+  cov_3 = cov_3,
+  cov_4 = cov_4,
+  cov_5 = cov_5
+)
+
+cvstats <- as.data.frame(brt_1$cv.statistics[c(1, 3, 5)])
+cvstats$deviance.null <- brt_1$self.statistics$mean.null
+cvstats$deviance.explained <- 
+  (cvstats$deviance.null - cvstats$deviance.mean) / 
+  cvstats$deviance.null
+cvstats[[model_name]] <- rep(model_name, nrow(cvstats))
+colnames(cvstats)[colnames(cvstats) == "discrimination.mean"] <- "AUC"
+
+
