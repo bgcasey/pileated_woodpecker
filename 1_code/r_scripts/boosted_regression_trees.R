@@ -185,6 +185,9 @@ bootstrap_brt <- function(data, n_iterations) {
   return(list(models = models_list, stats_df = all_stats_df))
 }
 
+# Example usage:
+# bootstrap_models <- bootstrap_brt(data, n_iterations)
+
 ## 4.2. Run the bootstraps ----
 # Set the number of iterations
 n_iterations <- 50    
