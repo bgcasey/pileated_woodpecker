@@ -3,8 +3,8 @@
 # author: "Brendan Casey"
 # created: "2024-02-27"
 # description: > 
-#   Using random stratified sampling on the PIWO predictive map 
-#   to deternine where to do field work to valifat the model.
+#   Use random stratified sampling on the PIWO predictive map 
+#   to determine where to do field work to validate the model.
 # ---
 
 # 1. Setup ----
