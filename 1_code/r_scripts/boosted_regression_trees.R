@@ -14,34 +14,34 @@
 #   and a dataframe with model statistics.
 # ---
 
-# Setup ----
-## Load Packages ----
-library(tidyverse) # For data manipulation
-library(dismo) # For species distribution modeling and BRTs
-library(gbm) # For boosted regression trees
-library(pROC) # For AUC calculation
+# 1. Setup ----
+## 1.1. Load Packages ----
+library(tidyverse)  # For data manipulation
+library(dismo)      # For species distribution modeling and BRTs
+library(gbm)        # For boosted regression trees
+library(pROC)       # For AUC calculation
 
-## Load custom functions ----
+## 1.2. Load custom functions ----
 # including function for getting BRT model stats.
 source("1_code/r_scripts/functions/misc_functions.R") 
 
-## Load data ----
+## 1.3. Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
 data <- data_for_models
 
-## Load tuned parameters ----
+## 1.4. Load tuned parameters ----
 load("2_pipeline/store/tuned_param.rData")
 
-# Boosted Regression Trees ----
+## 1.5. Randomize data ----
 set.seed(123)
 
-## Randomize data ----
 random_index <- sample(1:nrow(data), nrow(data))
 random_data <- data[random_index, ]
 o <- random_data$PIWO_offset
 random_data <- dplyr::select(random_data, -c(PIWO_offset))
 
-## Apply `dismo::gbm.step` to tuned parameters ----
+# 2. Boosted Regression Tree ----
+## 2.1. Apply `dismo::gbm.step` to tuned parameters ----
 brt_1 <- gbm.step(data = random_data, 
                   gbm.x = 2:ncol(random_data), 
                   gbm.y = 1, 
@@ -54,27 +54,28 @@ brt_1 <- gbm.step(data = random_data,
                   silent = FALSE)
 save(brt_1, file = "3_output/models/WT/brt_1.rData")
 
-### Get model stats ----
+## 2.2. Get model stats ----
 brt_1_stats <- calculate_brt_stats(model = brt_1)
-rmsave(brt_1_stats, file = "3_output/model_results/brt_1_stats.rData")
+save(brt_1_stats, file = "3_output/model_results/brt_1_stats.rData")
 
-## Drop variables that don't improve model performance ----
+# 3. Simplified Boosted Regression Tree ----
+## 3.1. Drop variables that don't improve model performance ----
 brt_1_simp <- gbm.simplify(brt_1)
 save(brt_1_simp, file = "2_pipeline/store/models/brt_1_simp.rData")
 
-### Remove non-numeric characters from the row names
+## 3.2. Remove non-numeric characters from the row names ----
 rownames(brt_1_simp$deviance.summary) <- 
   gsub("[^0-9]", "", rownames(brt_1_simp$deviance.summary))
 
-### Get the optimal number of drops ----
+## 3.3. Get the optimal number of drops ----
 optimal_no_drops <- as.numeric(rownames(
   brt_1_simp$deviance.summary %>% slice_min(mean)))
 
-### Remove droped variables from the dataframe ----
+## 3.4. Remove dropped variables from the dataframe ----
 random_data <- random_data %>%
   dplyr::select(PIWO, brt_1_simp$pred.list[[optimal_no_drops]])
 
-## Simplified BRT ----
+## 3.5 BRT Second Iteration ----
 brt_2 <- gbm.step(data = random_data, 
                   gbm.x = 2:ncol(random_data), 
                   gbm.y = 1, 
@@ -88,18 +89,18 @@ brt_2 <- gbm.step(data = random_data,
 
 save(brt_2, file = "2_pipeline/store/models/brt_2.rData")
 
-### Get model stats ----
+## 3.6 Get model stats ----
 summary(brt_2)
 brt_2_stats <- calculate_brt_stats(model = brt_2)
 save(brt_2_stats, file = "3_output/model_results/brt_2_stats.rData")
 
-## Bootstrap model ----
+# 4. Bootstrap model ----
 # Perform bootstrap iterations through the simplified 
 # model. It is computationally intensive and may take a long time to 
 # run. Adjust the number of iterations based on computational 
 # resources and needs.
 
-### Define the bootstrap function ----
+## 4.1. Define the bootstrap function ----
 # Function to perform bootstrap iterations for a given dataset and 
 # number of iterations. It returns a list containing a dataframe of 
 # model statistics and a list of the models themselves.
@@ -122,10 +123,12 @@ bootstrap_brt <- function(data, n_iterations) {
                              deviance.null = numeric(),
                              deviance.explained = numeric(), 
                              cov_1 = numeric(),
-                             cov_3 = numeric(), 
-                             cov_5 = numeric(),
                              cov_2 = numeric(), 
-                             cov_4 = numeric(),
+                             cov_3 = numeric(),
+                             cov_4 = numeric(), 
+                             cov_5 = numeric(),
+                             cov_6 = numeric(),
+                             cov_7 = numeric(),
                              predict_AUC = numeric(), 
                              stringsAsFactors = FALSE)
   
@@ -144,11 +147,16 @@ bootstrap_brt <- function(data, n_iterations) {
     train_data <- dplyr::select(train_data, -PIWO_offset)
     
     # Fit the model
-    model <- gbm.step(data = train_data, gbm.x = 2:ncol(train_data), 
-                      gbm.y = 1, family = "bernoulli", offset = o,
-                      tree.complexity = 3, n.minobsinnode = 10,
-                      learning.rate = 0.01, bag.fraction = 0.5, 
-                      max.trees = 50000)
+    model <- gbm.step(data = train_data, 
+                      gbm.x = 2:ncol(train_data), 
+                      gbm.y = 1, 
+                      offset = o,
+                      family = "bernoulli", 
+                      tree.complexity = 2,  
+                      n.minobsinnode = 10,
+                      learning.rate = 0.01, 
+                      bag.fraction = 0.85, 
+                      silent = FALSE)
     
     # Predict and calculate AUC
     predictions <- predict(model, newdata = test_data[, -1], 
@@ -176,15 +184,14 @@ bootstrap_brt <- function(data, n_iterations) {
   return(list(models = models_list, stats_df = all_stats_df))
 }
 
-### Run the bootstrap ----
+## 4.2. Run the bootstraps ----
 # Set the number of iterations
 n_iterations <- 2  
 
 # run the bootstrap function
 bootstrap_models <- bootstrap_brt(data, n_iterations)
 
-### Save models ----
+## 4.3. Save models ----
 save(bootstrap_models, 
      file = "3_output/model_results/bootstrap_models.rData")
-
 
