@@ -101,12 +101,12 @@ save(brt_2_stats, file = "3_output/model_results/brt_2_stats.rData")
 # resources and needs.
 
 ## 4.1. Define the bootstrap function ----
-# Function to perform bootstrap iterations for a given dataset and 
-# number of iterations. It returns a list containing a dataframe of 
-# model statistics and a list of the models themselves.
+# Function to perform bootstrap iterations for a boosted regression 
+# tree. It returns an object containing a dataframe of model 
+# statistics and a list of the models.
 #
 # Parameters:
-#   data: The dataset to be used for bootstrapping.
+#   data: The data to be used for bootstrapping.
 #   n_iterations: The number of bootstrap iterations to perform.
 #
 # Returns:
@@ -156,7 +156,8 @@ bootstrap_brt <- function(data, n_iterations) {
                       n.minobsinnode = 10,
                       learning.rate = 0.01, 
                       bag.fraction = 0.85, 
-                      silent = FALSE)
+                      silent = FALSE,
+                      plot.main = FALSE)
     
     # Predict and calculate AUC
     predictions <- predict(model, newdata = test_data[, -1], 
@@ -186,7 +187,7 @@ bootstrap_brt <- function(data, n_iterations) {
 
 ## 4.2. Run the bootstraps ----
 # Set the number of iterations
-n_iterations <- 2  
+n_iterations <- 50    
 
 # run the bootstrap function
 bootstrap_models <- bootstrap_brt(data, n_iterations)
