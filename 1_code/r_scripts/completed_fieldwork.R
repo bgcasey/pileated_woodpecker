@@ -1,140 +1,133 @@
 # ---
-# title: "piwo_nest_cavities"
+# title: "PIWO Nest Cavities"
 # author: "Brendan Casey"
 # created: "2024-05-23"
-# description: "code to extract piwo nest cavities data"
+# description: >
+#   Code to extract fieldwork locations and known PIWO cavity locations 
+#   from Epicollect.
 # ---
 
-# Setup ----
-## Load packages----
-library(tidyverse) # for data manipulation
-library(sf)  # for spatial data
-library(httr) # for http requests (epicollect)
-library(jsonlite)  # if needing json format
+# 1. Setup ----
+## 1.1 Load packages ----
+library(tidyverse)  # for data manipulation
+library(sf)         # for spatial data
+library(httr)       # for HTTP requests (Epicollect)
+library(jsonlite)   # if needing JSON format
 
-## Source functions----
+## 1.2 Epicollect login credentials ----
+config <- "1_code/r_scripts/.epilogin.R"
+source(config)
+
+## 1.3 Source functions ----
 source("1_code/r_scripts/functions/get_epicollect_data.R")
 source("1_code/r_scripts/functions/misc_functions.R")
 
-## Import data----
-### Get planned locations----
-ss_plan_points<-st_read(paste0("0_data/external/Simran_Bains/",
-                               "fieldwork_2024/sample_locations_v4/",
-                               "sample_locations_v4.shp"))
-ss_plan_square<-st_read(paste0("0_data/external/Simran_Bains/",
-                               "fieldwork_2024/sample_locations_v4/",
-                               "sample_squares_v4.shp"))
-### Survey notes----
+# 2. Import data ----
+## 2.1 Get planned locations ----
+ss_plan_points <- st_read(paste0("0_data/external/Simran_Bains/",
+                                 "fieldwork_2024/sample_locations_v4/",
+                                 "sample_locations_v4.shp"))
+ss_plan_square <- st_read(paste0("0_data/external/Simran_Bains/",
+                                 "fieldwork_2024/sample_locations_v4/",
+                                 "sample_squares_v4.shp"))
+## 2.2 Survey notes ----
 load("0_data/manual/response/wood_field_notes_2024.RData")
 
-## Get data from epicollect----
-### BU nest cavities----
-### Enter epicollect credentials
-cID <- "5250"  # client ID
-secret <- "WmTAMxGgH1fIkMks7Icx1Cx9KQYH6ooNYqn0WcDF"  # client secret
+# 3. Get data from Epicollect ----
+## 3.1 BU nest cavities ----
+### Enter Epicollect credentials
+cID <- Sys.getenv("cID_cavity")  # client ID
+secret <- Sys.getenv("secret_cavity")  # client secret
 
 # The following arguments can be found via the API tab in the 
-# eipcollect form dashboard. 
-proj.slug <- "bu-piwo-cavity-survey"  # project slug
-form.ref <- paste0("d9574500b12d4784925e688e9d4e8ad6",
-                   "_6501e829c9424")  # form reference
-branch.ref.1 <- paste0("d9574500b12d4784925e688e9d4e8ad6",
+# Epicollect form dashboard. 
+proj_slug <- "bu-piwo-cavity-survey"      # project slug
+form_ref <- paste0("d9574500b12d4784925e688e9d4e8ad6",
+                   "_6501e829c9424")      # form reference
+branch_ref_1 <- paste0("d9574500b12d4784925e688e9d4e8ad6",
                        "_6501e829c9424",
-                       "_6530962eb8a46") # branch reference
-branch.ref.2 <- paste0("d9574500b12d4784925e688e9d4e8ad6",
-                       "_6501e829c9424",
-                       "_65d4fd53a4f68") # branch reference
+                       "_6530962eb8a46")  # branch reference
 
-cavities<-get_epi_data(cID, secret, proj.slug, form.ref, 
-                       branch.ref.1)
+cavities <- get_epi_data(cID, secret, proj_slug, form_ref, 
+                         branch_ref_1)
 
-### BU PIWO cavity survey photos----
-### Enter epicollect credentials
-cID <- "5249"  # client ID
-secret <- "bEqr1LBQWmGFURt42V7Yogi7ZgQnuzjzVGqz4aDq"  # client secret
+## 3.2 BU PIWO cavity survey photos ----
+### Enter Epicollect credentials
+cID <- Sys.getenv("cID_photo")  # client ID
+secret <- Sys.getenv("secret_photo")  # client secret
 
 # The following arguments can be found via the API tab in the 
-# eipcollect form dashboard. 
-proj.slug <- "bu-piwo-cavity-survey-photos"  # project slug
-form.ref <- paste0("916196c9db8345dfad511f18283b9f0b",
+# Epicollect form dashboard. 
+proj_slug <- "bu-piwo-cavity-survey-photos"  # project slug
+form_ref <- paste0("916196c9db8345dfad511f18283b9f0b",
                    "_65f45a58f2e6f")  # form reference
-branch.ref.1 <- paste0("916196c9db8345dfad511f18283b9f0b_",
+branch_ref_1 <- paste0("916196c9db8345dfad511f18283b9f0b_",
                        "65f45a58f2e6f",
                        "_65f45b0ae8946")  # branch reference
 
+survey_photos <- get_epi_data(cID, secret, proj_slug, form_ref, 
+                              branch_ref_1)
 
-survey_photos<-get_epi_data(cID, secret, proj.slug, form.ref, 
-                            branch.ref.1)
-
-### YEG Pileated Woodpecker Cavity Survey ----
-### Enter epicollect credentials
-## Enter epicollect credentials
-cID <- "5255 "  # client ID
-secret <- "tnjguGweQSZ9uErU1AATwmnZTG6J2D7kIok7oQ6r"  # client secret
+## 3.3 YEG Pileated Woodpecker Cavity Survey ----
+### Enter Epicollect credentials
+cID <- Sys.getenv("cID_yeg")  # client ID
+secret <- Sys.getenv("secret_yeg")  # client secret
 
 # The following arguments can be found via the API tab in the 
-# eipcollect form dashboard. 
-proj.slug <- "yeg-pileated-woodpecker-cavity-survey"  # project slug
-form.ref <- paste0("3a2c7dc2f9ec4290b719921f8d78a484",
+# Epicollect form dashboard. 
+proj_slug <- "yeg-pileated-woodpecker-cavity-survey"  # project slug
+form_ref <- paste0("3a2c7dc2f9ec4290b719921f8d78a484",
                    "_6501e829c9424")  # form reference
-branch.ref.1 <- paste0("3a2c7dc2f9ec4290b719921f8d78a484",
+branch_ref_1 <- paste0("3a2c7dc2f9ec4290b719921f8d78a484",
                        "_6501e829c9424",
                        "_65f45b0ae8946")  # branch reference
 
-yeg_cavities<-get_epi_data(cID, secret, proj.slug, form.ref, 
-                           branch.ref.1)
+yeg_cavities <- get_epi_data(cID, secret, proj_slug, form_ref, 
+                             branch_ref_1)
 
-
-## ////////////////////////////////////////////////////////////////
-
-# Field work locations ----
-## Searched locations
-epi_ss<-as.data.frame(survey_photos$ct1$data$entries)%>%
-  select(c(ss='2_What_is_the_name_o'))%>%
-  mutate(ss = toupper(ss))%>%
+# 4. Field work locations ----
+## 4.1 Searched locations
+epi_ss <- as.data.frame(survey_photos$ct1$data$entries) %>%
+  select(c(ss = '2_What_is_the_name_o')) %>%
+  mutate(ss = toupper(ss)) %>%
   distinct()
 
-# Get searched locations
-searched<-ss_plan_points%>%
-  semi_join(field_notes, by=c('Name'='ss'))
+# 4.2 Get searched locations
+searched <- ss_plan_points %>%
+  semi_join(field_notes, by = c('Name' = 'ss'))
 
-
-# Convert points to 1 ha squares
-points <- st_transform(piwo_searched, crs=3348)
+# 4.3 Convert points to 1 ha squares
+points <- st_transform(piwo_searched, crs = 3348)
 radius <- 50  # radius in meters
 squares <- points_to_squares(points, radius)
 
-## Save the data----
+## 4.4 Save the data ----
 st_write(piwo_searched, 
          "3_output/shapefiles/piwo_searched.shp", append = FALSE)
 
-## ////////////////////////////////////////////////////////////////
-
-# Known cavity locations----
+# 5. Known cavity locations ----
 bu_cav <- cavities$ct1$data$entries %>%
   dplyr::select(c(location = "6_Location_Name_plea",
                   date = "3_Date",
                   lat = "7_Latitude_6_decimal",
-                  lon = "8_Longitude_6_decima",
-                  ))
+                  lon = "8_Longitude_6_decima"))
 
 yeg_cav <- yeg_cavities$ct1$data$entries %>%
   dplyr::select(c(location = "6_Location_Name_plea",
                   date = "3_Date",
                   lat = "7_Latitude_6_decimal",
-                  lon = "8_Longitude_6_decima",
-  ))
+                  lon = "8_Longitude_6_decima"))
 
-# rbind the two data frames
+# 5.1 Combine the two data frames
 combined_df <- rbind(bu_cav, yeg_cav)
 
-# Make all latitudes negative
+# 5.2 Make all longitudes negative
 combined_df$lon <- abs(combined_df$lon) * -1
 
-# Convert to an sf object
+# 5.3 Convert to an sf object
 combined_sf <- st_as_sf(combined_df, coords = c("lon", "lat"), 
                         crs = 4326)
 
-# Save the data
+# 5.4 Save the data
 st_write(combined_sf, "3_output/shapefiles/piwo_cavities.shp")
 
