@@ -1,126 +1,86 @@
 # ---
 # title: "5_spatial_predictions"
 # author: "Brendan Casey"
-# created: "2023-09-12"
+# created: "2024-06-20"
+# description: >
+#   This script generates spatial predictions from a list of 
+#   bootstrapped models and prediction grid of model covariates. It 
+#   outputs mean and standard deviation predictive rasters.
 # ---
 
-#Notes----
-# Code for generating predictive maps from the BRT models.
 
-##////////////////////////////////////////////////////////////////
+# 1. Setup ----
+## Load packages ----
+library(terra)  # For working with rasters
 
-#Setup ----
+## 1.2 Load prediction_grid ----
+prediction_grid <- rast(
+  "0_data/manual/predictor/raster_mosaics/cov_all.tif")
 
-##Load packages----
-library(dismo)
-library(raster)
-library(gbm)
-library(terra)
-library(sf)
+## 1.3 Load bootstrapped models ----
+load("3_output/model_results/bootstrap_models.rData") 
 
-##load rasters----
-# NFIS<-raster::stack("/Volumes/Projects/pileated_woodpecker_lidar/0_data/external/lionel/2_outputs/stackHardBuffer150-565-1000-Austin.tif")
-cov_all<-rast("0_data/manual/predictor/raster_mosaics/cov_all.tif")
-cov_all<-stacked_rasters
+# 2. Generate spatial predictions ----
+# 2.1 Define function to make spatial predictions ----
+# This function generates spatial predictions from a list of models
+# and a prediction grid. It calculates and returns the mean and 
+# standard deviation of the predictions across all models.
+#
+# Args:
+#   models_list: A list of models to make predictions from.
+#   prediction_grid: A SpatRaster object with covariates matching 
+#                    those used in the models.
+#
+# Returns:
+#   A list containing two SpatRaster objects:
+#     - mean_raster: The mean of the predictions across all models.
+#     - sd_raster: The standard deviation of the predictions across
+#                  all models.
 
+make_spatial_pred <- function(models_list, prediction_grid) {
+  # Initialize list for prediction rasters
+  prediction_rasters <- list()
+  
+  # Loop through each model
+  for (i in seq_along(models_list)) {
+    model <- models_list[[i]]
+    
+    # Generate predictions
+    prediction <- predict(prediction_grid, model, 
+                          type = "response")
+    
+    # Store prediction raster
+    prediction_rasters[[paste("prediction", i, sep = "_")]] <- 
+      prediction
+  }
+  
+  # Combine predictions into SpatRaster
+  prediction_stack <- rast(prediction_rasters)
+  
+  # Calculate mean and sd across layers
+  mean_raster <- app(prediction_stack, mean, na.rm = TRUE)
+  sd_raster <- app(prediction_stack, sd, na.rm = TRUE)
+  
+  # Return mean and sd rasters
+  return(list(mean_raster = mean_raster, sd_raster = sd_raster))
+}
 
-## Crreat latitdude and longitude raster----
-### Create lat and lon values for each cell ----
-lon <- init(cov_all, 'x')
-names(lon)<-"lon"
-lat <- init(cov_all, 'y')
-names(lat)<-"lat"
+# Example usage:
+# spatial_predictions <- make_spatial_pred(bootstrap_models$models, 
+#                                          prediction_grid
+#                                          )
 
-cov_all<-c(cov_all, lon, lat)
-# # Names of layers to be removed
-# layers_to_remove <- c("FirstReturns.H150", "FirstReturns.H565", "FirstReturns.H1000")
-# 
-# # Remove layers by name
-# NFIS <- raster::dropLayer(NFIS, layers_to_remove)
-# 
-# new_layer_names<- c("N_biomass_150", "N_biomass_565", "N_biomass_1000", 
-#                     "N_decid_150", "N_decid_565", "N_decid_1000", 
-#                     "N_age_150", "N_age_565", "N_age_1000", 
-#                     "N_volume_150", "N_volume_565", "N_volume_1000", 
-#                     "N_height_150", "N_height_565", "N_height_1000")
+# 2.2 Apply function ----
+spatial_pred <- make_spatial_pred(bootstrap_models$models, 
+                                  prediction_grid
+                                  )
 
-# names(NFIS) <- new_layer_names
+## 2.3 Save spatial predictions ---- 
+writeRaster(spatial_pred$mean_raster, 
+            "3_output/spatial_predictions/mean_prediction.tif", 
+            overwrite=TRUE)
 
-## rename to match renamed covariates
-# Replace '/' with '_'
-names(cov_all) <- gsub("/", "_", names(cov_all))
-# Replace '-' with '_'
-names(cov_all) <- gsub("-", "_", names(cov_all))
-# Replace ' ' with '_'
-# names(cov_all) <- gsub(" ", "_", names(cov_all))
-
-##load BRT model----
-load("3_output/models/WT/brt_ls_hlc_terrain_canopy_29_2.rData")
-# load("3_output/models/WT/brt_ls_29.rData")
-
-
-##////////////////////////////////////////////////////////////////
-
-# make prediction ----
-
-# There is no raster for year so we'll create a data frame with a constant value to plug into the predict function.
-load("0_data/manual/formatted_for_models/bird_cov_cleaned_20231121.rData")
-df2<-bird_cov
-df2$year<-as.factor(df2$year)
-year <- factor('2017', levels = levels(df2$year))
-add <- data.frame(year)
-
-
-p_piwo <- predict(cov_all, brt_ls_hlc_terrain_canopy_29_2, const=add,
-                    n.trees=brt_ls_hlc_terrain_canopy_29_2$gbm.call$best.trees, type="response", na.rm=TRUE)
-
-
-names(p_piwo)<-"PIWO_occ"
-
-writeRaster(p_piwo, file="3_output/predict_rasters/brt_ls_hlc_terrain_canopy_29_2_p_piwo.tif", overwrite=TRUE)
-
-##////////////////////////////////////////////////////////////////
-
-# Plot predictive rasters----
-p_piwo<-rast("3_output/predict_rasters/brt_ls_hlc_terrain_canopy_29_2_p_piwo.tif")
-
-# Change crs
-a<-project(p_piwo, "epsg:4326")
-
-## crop and mask to study area ----
-aoi<-st_read("0_data/external/Alberta/alberta.shp")
-aoi_s<-st_simplify(aoi)
-aoi_t<-st_transform(aoi_s, crs="epsg:4326" )
-
-buffer_distance <- 1000  # Adjust the buffer distance as needed
-aoi_buff <- st_buffer(aoi_t, dist = buffer_distance)
-
-a2<-terra::mask(a, aoi_t)
-a3<-terra::crop(a2, aoi_buff)
-
-## set plot parameters ----
-plg = list(
-  title = "Probility of occupancy",
-  title.cex = 0.6,
-  cex = 0.7,
-  shrink=1
-)
-pax <- list(retro=TRUE)
-
-## Plot ----
-# Set up save 
-png(file="3_output/predict_rasters/brt_ls_hlc_terrain_canopy_29_2_p_piwo.png", width=4, height=6, units="in", res=300)
-
-# Plot rasters side by side
-# par(mfrow=c(1,2))  # Set up a 1x2 plotting layout
-# Plot raster_A
-plot(a3, xlim=c(-141,-53),ylim=c(40,85),main="", cex.main=0.6, plg=plg, pax=pax, legend=TRUE)
-plot(aoi_t,col = adjustcolor("blue", alpha.f = 0.0), add=TRUE)
-# plot(buffered_sf$geometry, add=TRUE)
-
-# Plot raster_B
-# plot(b1, main="BRT with LiDAR", cex.main=0.6,plg=plg, pax=pax, legend=TRUE)
-dev.off()
-
-##////////////////////////////////////////////////////////////////
+writeRaster(spatial_pred$sd_raster,
+            "3_output/spatial_predictions/sd_prediction.tif", 
+            overwrite=TRUE)
 
