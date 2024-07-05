@@ -56,22 +56,23 @@ Icon?
 1_code/r_scripts/.scratch.R
 
 
-
+1_code/GEE/functions/
 
 ## Earth Engine functions
 
-# geomorpho90m.js
-HLI.js
-landcover_proportions.js
-# landsat_indices.js
-# landsat_time_series.js
-masks.js
-misc.js
-# sentinel_indices.js
-# sentinel_time_series.js
-timeseries_functions.js
-topoFunctions.js
-TPI.js
+# 1_code/GEE/functions/geomorpho90m.js
+1_code/GEE/functions/HLI.js
+1_code/GEE/functions/landcover_proportions.js
+# 1_code/GEE/functions/landsat_indices.js
+# 1_code/GEE/functions/landsat_time_series.js
+1_code/GEE/functions/masks.js
+1_code/GEE/functions/misc.js
+# 1_code/GEE/functions/sentinel_indices.js
+# 1_code/GEE/functions/sentinel_time_series.js
+1_code/GEE/functions/timeseries_functions.js
+1_code/GEE/functions/topoFunctions.js
+1_code/GEE/functions/TPI.js
 # utils.js
-utils_aaz.js
-landsat_7_slc_gap_filling.js
+1_code/GEE/functions/utils_aaz.js
+1_code/GEE/functions/landsat_7_slc_gap_filling.js
+1_code/GEE/functions/anual_forest_land_cover.js
