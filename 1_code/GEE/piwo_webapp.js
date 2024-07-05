@@ -31,7 +31,7 @@ var studyArea = ee.FeatureCollection(
     ssXy = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/ss_xy_ab"),
     piwoCavities = ee.FeatureCollection(
-  "projects/ee-bgcasey-piwomodels/assets/piwo_cavities"),
+  "projects/ee-bgcasey-piwomodels/assets/cavities_xy"),
     piwoSearched = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/piwo_searched"),
     pipeline = ee.FeatureCollection(
@@ -41,7 +41,7 @@ var studyArea = ee.FeatureCollection(
   piwoReclass = ee.Image(
   "projects/ee-bgcasey-piwomodels/assets/p_piwo_reclass");
 
-
+print(piwoCavities)
 var aoi = studyArea.geometry();
 // print(uaLogo)
 
@@ -94,15 +94,25 @@ var pipelineLyr = ui.Map.Layer(pipeline.style(
   "pipeline route").setShown(0);
 Map.add(pipelineLyr);
 
-var piwoCavitiesLyr = ui.Map.Layer(piwoCavities.style(
-  {color: 'f50b86', pointSize: 3}), {}, "PIWO Cavities").setShown(1);
-Map.add(piwoCavitiesLyr);
-
 var piwoSearchedLyr = ui.Map.Layer(piwoSearched.style(
-  {color: 'd8f400', fillColor: 'fdbf6f50', width: 3}), {}, 
+  {color: 'd8f400', pointSize: 3}), {}, 
   "Searched areas").setShown(1);
 Map.add(piwoSearchedLyr);
 
+
+
+
+// var piwoCavitiesLyr = ui.Map.Layer(piwoCavities.style(
+//   {color: 'f50b86', pointSize: 3}), {}, "PIWO Cavities").setShown(1);
+// Map.add(piwoCavitiesLyr);
+
+var piwoCavitiesLyr = ui.Map.Layer(piwoCavities.map(function(f) {
+    return f.set({
+        'style': {
+            color: f.get("color"),
+            pointSize: f.get("size"),
+    }})}).style({styleProperty: "style"})).setShown(1);
+Map.add(piwoCavitiesLyr);
 
 /**
  * SECTION 3: Creating Legend
@@ -180,10 +190,10 @@ Map.add(legendRaster);
 var values = [0, 1, 2, 3];
 var colors = ["F2F2F2", "#EBB25E", "#8BD000", "#00A600"];
 var labels = [
-  "unsuitable",
-  "low suitability", 
-  "moderate suitability", 
-  "high suitability"
+  "low",
+  "moderate", 
+  "high", 
+  "very high"
 ];
 
 // Create a legend
@@ -194,7 +204,7 @@ var legendReclass = ui.Panel({
   }
 });
 legendReclass.add(ui.Label(
-  'Pileated Woodpecker habitat suitability', 
+  'Probability of detecting PIWO vocalization', 
   {fontWeight: 'bold'}
 ));
 
@@ -217,6 +227,74 @@ values.forEach(function(val, index) {
 });
 
 Map.add(legendReclass);
+
+// Woodpecker cavities
+// Define the values, colors, and sizes
+var diameters = ["2.5 - 5.0", "5.0 - 7.6", "7.6 - 10.2", "> 10.2"];
+var colors = ['#d7b5d8', '#df65b0', '#dd1c77', '#980043'];
+var sizes = [10, 15, 20, 25]; // Size for legend circles (pixels)
+
+// Create a legend panel
+var legendCavities = ui.Panel({
+  style: {
+    position: 'bottom-right',
+    padding: '8px 15px'
+  }
+});
+
+// Add a title to the legend
+var legendTitleCavities = ui.Label({
+  value: 'Woodpecker Cavities',
+  style: {
+    fontWeight: 'bold',
+    fontSize: '14px',
+    margin: '0 0 4px 0'
+  }
+});
+legendCavities.add(legendTitleCavities);
+
+// Add a subtitle to the legend
+var legendSubtitleCavities = ui.Label({
+  value: 'Diameter (cm)',
+  style: {
+    fontWeight: 'normal',
+    fontSize: '12px',
+    margin: '0 0 10px 0'
+  }
+});
+legendCavities.add(legendSubtitleCavities);
+
+
+// Function to create a legend item
+function createLegendItem(color, size, label) {
+  var colorCircle = ui.Label({
+    value: '\u25cf',
+    style: {
+      color: color,
+      fontSize: size + 'px',
+      margin: '0 6px 0 0',
+      padding: '0'
+    }
+  });
+
+  var description = ui.Label({
+    value: label,
+    style: {margin: '0 0 4px 0', padding: '0'}
+  });
+  
+  return ui.Panel([colorCircle, description], ui.Panel.Layout.Flow('horizontal'));
+}
+
+// Add legend items
+for (var i = 0; i < diameters.length; i++) {
+  legendCavities.add(createLegendItem(colors[i], sizes[i], diameters[i]));
+}
+
+Map.add(legendCavities);
+
+
+
+
 
 /**
  * SECTION 4: Toggle Map Features
@@ -267,8 +345,12 @@ function createStyledCheckbox(label, color, shown, layer) {
   // Set the icon for the checkbox based on the layer.
   if (layer === piwoCavitiesLyr) {
     icon = ui.Label('\u25cf', {color: '#' + color});
-  } else if (layer === pipelineLyr || layer === piwoSearchedLyr) {
+  } else if (layer === pipelineLyr) {
     icon = ui.Label('\u25A1', {color: '#' + color});
+  } else if (layer === piwoSearchedLyr) {
+    icon = ui.Label('\u25cf', {color: '#' + color});  
+  // } else if (layer === pipelineLyr || layer === piwoSearchedLyr) {
+  //   icon = ui.Label('\u25A1', {color: '#' + color});  
   } else if (layer === piwoOccLayer) {
     icon = ui.Label('\u25A1', {color: '#' + color});
   } else if (layer === piwoReclassLayer) {
@@ -297,14 +379,14 @@ var checkboxMaster = ui.Panel({
 checkboxMaster.add(createStyledCheckbox(
   'Pathways Pipeline', '05f9e2', false, pipelineLyr));
 checkboxMaster.add(createStyledCheckbox(
-  'Pileated woodpecker nest cavities', 'f50b86', true, 
+  'Woodpecker cavities', 'f50b86', true, 
   piwoCavitiesLyr));
 checkboxMaster.add(createStyledCheckbox(
   'Searched areas', 'd8f400', true, piwoSearchedLyr));
 checkboxMaster.add(createStyledCheckbox(
   'Pileated woodpecker occupancy', "FFFFFF", false, piwoOccLayer));
 checkboxMaster.add(createStyledCheckbox(
-  'Pileated woodpecker occupancy reclassified', "FFFFFF", false, 
+  'Probability of detecting PIWO vocalization', "FFFFFF", false, 
   piwoReclassLayer));
 
 /**
@@ -315,11 +397,11 @@ checkboxMaster.add(createStyledCheckbox(
 
 // Create buttons to download the PIWO cavities and searched areas
 var downloadCavitiesButton = ui.Button({
-  label: 'Download PIWO cavity locations',
+  label: 'Download cavity locations',
   onClick: function() {
     var link = piwoCavities.getDownloadURL({
       format: 'SHP',
-      filename: 'piwo_cavities_2024-05-26'
+      filename: 'cavities_locations'
     });
     window.open(link, '_blank');
   }
@@ -330,7 +412,7 @@ var downloadSearchedButton = ui.Button({
   onClick: function() {
     var link = piwoSearched.getDownloadURL({
       format: 'SHP',
-      filename: 'piwo_searched_areas_2024-05-26'
+      filename: 'piwo_searched_areas'
     });
     window.open(link, '_blank');
   }
@@ -388,18 +470,22 @@ var description1 = ui.Label(
 var description2 = ui.Label(
   'Efficient compliance with the MBR 2022 requires an ' +
   'understanding of where Pileated Woodpecker are located. ' +
-  'This project provides a set of tools to help industry ' +
-  'identify where Pileated Woodpecker are likely to be and ' +
-  'where additional monitoring is and is not needed to find ' +
-  'nests. Here we present our latest predictive map, areas ' +
-  'that we have searched for Pileated Woodpecker nest ' +
-  'cavities, and known nest cavity locations. The predictive ' +
-  'map will be validated and updated as new data comes in. ' +
-  'Data and survey protocols are available on request ' +
-  'through the links provided below. Please direct all ' +
-  'correspondence to Dr. Brendan Casey (bgcasey@ualberta.ca)',  
+  'This project provides a set of tools to help users identify ' +
+  'where Pileated Woodpecker are likely to be and where ' +
+  'additional monitoring is and is not needed to find nests. ' +
+  'Here we present our latest predictive map (based on where ' +
+  'machine learning models and province-wide remote sensing ' +
+  'variables predict you will hear/see a Pileated Woodpecker). ' +
+  'Areas that we have searched for nest cavities and known nest ' +
+  'cavity locations are also shown. The predictive map will be ' +
+  'validated and updated regularly as new data comes in so ' +
+  'changes are to be expected. Data and survey protocols are ' +
+  'available on request through the links provided below. ' +
+  'Please direct all correspondence to Dr. Brendan Casey ' +
+  '(bgcasey@ualberta.ca)',  
   {margin: '0px 30px 15px 8px'}
 );
+
 
 var github = ui.Label('https://github.com/bgcasey/pileated_woodpecker', {
   color: '0000EE',
