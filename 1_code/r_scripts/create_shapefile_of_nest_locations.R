@@ -195,10 +195,10 @@ PIWO_cavities_xy <- rbind(SB_PIWO_cavities_xy,
     TRUE ~ NA_character_ 
   ))%>%
   mutate(size = as.numeric(case_when(
-    diameter == "2.5 - 5.0" ~ '4',
-    diameter == "5.0 - 7.6" ~ '6',
-    diameter == "7.6 - 10.2" ~ '8',
-    str_detect(diameter, "> 10.2") ~ '10', 
+    diameter == "2.5 - 5.0" ~ '2',
+    diameter == "5.0 - 7.6" ~ '3',
+    diameter == "7.6 - 10.2" ~ '4',
+    str_detect(diameter, "> 10.2") ~ '5', 
     TRUE ~ NA_character_ 
   )))%>%
   mutate(d_class = as.numeric(d_class))%>%
@@ -212,3 +212,24 @@ save(PIWO_cavities_xy,
 st_write(PIWO_cavities_xy, "0_data/manual/spatial/cavities_xy.shp", 
          append = FALSE)
 
+# Compress shapefile for sharing
+# Define the directory containing the shapefile and the basename of the shapefile
+shapefile_dir <- "0_data/manual/spatial"
+shapefile_basename <- "cavities_xy"
+
+# Specify the extensions of the shapefile components to include
+shapefile_extensions <- c("shp", "shx", "dbf", "prj")
+
+# Generate the paths for each component of the shapefile
+shapefile_parts <- sapply(shapefile_extensions, function(ext) {
+  file.path(shapefile_dir, paste0(shapefile_basename, ".", ext))
+}, USE.NAMES = FALSE)
+
+# Filter out any non-existent files
+shapefile_parts <- shapefile_parts[file.exists(shapefile_parts)]
+
+# Define the name and path of the output zip file
+zipfile_path <- file.path(shapefile_dir, paste0(shapefile_basename, ".zip"))
+
+# Create the zip archive
+zip(zipfile = zipfile_path, files = shapefile_parts)
