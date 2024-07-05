@@ -1,7 +1,3 @@
-/**** Start of imports. If edited, may not auto-convert in the playground. ****/
-var geometry = /* color: #d63000 */ee.Geometry.MultiPoint(),
-    aoi = ee.FeatureCollection("users/bgcasey/old/studyarea_CL");
-/***** End of imports. If edited, may not auto-convert in the playground. *****/
 /*
  * ---
  * title: "Extract spatial data"
