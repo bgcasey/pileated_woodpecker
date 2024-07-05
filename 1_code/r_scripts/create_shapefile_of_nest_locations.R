@@ -46,7 +46,9 @@ SB_PIWO_cavities_xy <- SB_PIWO %>%
   filter(Nest == "y") %>%
   select(`Location Name`, Latitude, Longitude) %>%
   rename(location = `Location Name`, lat = Latitude, 
-         lon = Longitude) %>%
+         lon = Longitude
+         ) %>%
+  mutate(diameter = "> 10.2") %>%
   mutate(source = "SB") %>%
   distinct() %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
@@ -77,7 +79,9 @@ bu_cavities <- get_epi_data(cID, secret, proj_slug, form_ref, branch_ref_1)
 bu_PIWO_cavities_xy <- bu_cavities$ct1$data$entries %>%
   dplyr::select(location = "6_Location_Name_plea", 
                 lat = "7_Latitude_6_decimal", 
-                lon = "8_Longitude_6_decima") %>%
+                lon = "8_Longitude_6_decima",
+                diameter = "23_Height_of_entranc") %>%
+  mutate(diameter = "> 10.2") %>%
   mutate(source = "BU_epi", lon = abs(lon) * -1) %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
 
@@ -101,9 +105,11 @@ branch_ref_1 <- "317cb73d30fa4b5f976fcdc969265816_6501e829c9424_6530962eb8a46"
 bu_cavities_2 <- get_epi_data(cID, secret, proj_slug, form_ref, branch_ref_1)
 
 bu_2_PIWO_cavities_xy <- bu_cavities_2$ct1$data$entries %>%
-  dplyr::select(location = "7_Location_Name_plea", 
+  dplyr::select(
+                location = "7_Location_Name_plea", 
                 lat = "8_Latitude_6_decimal", 
                 lon = "9_Longitude_6_decima") %>%
+  mutate(diameter = "> 10.2") %>%
   mutate(source = "BU_epi", lon = abs(lon) * -1) %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
 
@@ -129,20 +135,80 @@ yeg_cavities <- get_epi_data(cID, secret, proj_slug, form_ref, branch_ref_1)
 yeg_PIWO_cavities_xy <- yeg_cavities$ct1$data$entries %>%
   dplyr::select(location = "6_Location_Name_plea", 
                 lat = "7_Latitude_6_decimal", 
-                lon = "8_Longitude_6_decima") %>%
+                lon = "8_Longitude_6_decima",
+                diameter = "23_Height_of_entranc") %>%
+  mutate(diameter = "> 10.2") %>%
   mutate(source = "BU_epi", lon = abs(lon) * -1) %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
+
+
+## 2.6 BU 2024 woodpecker cavity survey ----
+### Enter Epicollect credentials 
+cID <- Sys.getenv("cID_survey2024")  # client ID
+secret <- Sys.getenv("secret_survey2024")  # client secret
+
+# The following arguments can be found via the API tab in the
+# Epicollect form dashboard.
+proj_slug <- "bu-2024-woodpecker-cavity-survey"  # project slug
+form_ref <- paste0("4cfa4a5dbf5c4559899a9cbf89a4e923",
+                   "_66418cffc00ea")  # form reference
+branch_ref_1 <- paste0("4cfa4a5dbf5c4559899a9cbf89a4e923",
+                       "_66418cffc00ea",
+                       "_6641906467731")  # branch reference
+
+#### Get data from Epicollect
+cavity_surveys <- get_epi_data(cID, secret, proj_slug, form_ref,
+                               branch_ref_1)
+
+cavity_surveys_xy<-as.data.frame(cavity_surveys[["ct2"]][["data"]])
+
+cavity_surveys_xy <- as.data.frame(cavity_surveys[["ct2"]][["data"]]) %>%
+  unnest(`entries.14_Location_within_t`)%>%
+  dplyr::select(location = "entries.ec5_branch_owner_uuid", 
+                lat = "latitude", 
+                lon = "longitude",
+                diameter = "entries.17_Estimated_diamete") %>%
+  mutate(diameter = str_extract(diameter, "\\d+\\.\\d+ to \\d+\\.\\d+ cm")) %>%
+  mutate(diameter = str_replace(diameter, " to ", " - "),
+         diameter = str_replace_all(diameter, " cm|cm", "")) %>%
+  mutate(source = "BU_epi", lon = abs(lon) * -1) %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326, remove = FALSE)
+  
 
 # 3. Combine into single shapefile ----
 PIWO_cavities_xy <- rbind(SB_PIWO_cavities_xy, 
                           bu_PIWO_cavities_xy, bu_2_PIWO_cavities_xy, 
-                          yeg_PIWO_cavities_xy)
+                          yeg_PIWO_cavities_xy, cavity_surveys_xy)%>%
+  mutate(d_class = case_when(
+    diameter == "2.5 - 5.0" ~ "1",
+    diameter == "5.0 - 7.6" ~ "2",
+    diameter == "7.6 - 10.2" ~ "3",
+    str_detect(diameter, "> 10.2") ~ "4", # Assuming diameter can have values like "> 10.2"
+    TRUE ~ NA_character_ # For any cases that do not match the above conditions
+  ))%>%
+  ## add columns for size and color for visualizing in GEE
+  mutate(color = case_when(
+    diameter == "2.5 - 5.0" ~ 'd7b5d8',
+    diameter == "5.0 - 7.6" ~ 'df65b0',
+    diameter == "7.6 - 10.2" ~ 'dd1c77',
+    str_detect(diameter, "> 10.2") ~ '980043', 
+    TRUE ~ NA_character_ 
+  ))%>%
+  mutate(size = as.numeric(case_when(
+    diameter == "2.5 - 5.0" ~ '4',
+    diameter == "5.0 - 7.6" ~ '6',
+    diameter == "7.6 - 10.2" ~ '8',
+    str_detect(diameter, "> 10.2") ~ '10', 
+    TRUE ~ NA_character_ 
+  )))%>%
+  mutate(d_class = as.numeric(d_class))%>%
+  na.omit()
 
 # Save as spatial data frame
 save(PIWO_cavities_xy, 
-     file="0_data/manual/spatial/PIWO_cavities_xy.rData")
+     file="0_data/manual/spatial/cavities_xy.rData")
 
 # Save as shapefile
-st_write(PIWO_cavities_xy, "0_data/manual/spatial/PIWO_cavities_xy.shp", 
+st_write(PIWO_cavities_xy, "0_data/manual/spatial/cavities_xy.shp", 
          append = FALSE)
 
