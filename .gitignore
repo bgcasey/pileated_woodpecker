@@ -54,3 +54,24 @@ Icon?
 1_code/r_scripts/.epilogin.R
 
 1_code/r_scripts/.scratch.R
+
+
+
+
+## Earth Engine functions
+
+# geomorpho90m.js
+HLI.js
+landcover_proportions.js
+# landsat_indices.js
+# landsat_time_series.js
+masks.js
+misc.js
+# sentinel_indices.js
+# sentinel_time_series.js
+timeseries_functions.js
+topoFunctions.js
+TPI.js
+# utils.js
+utils_aaz.js
+landsat_7_slc_gap_filling.js

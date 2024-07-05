@@ -55,15 +55,34 @@ function loadAndProcess(collectionName, aoi) {
  * @return {ee.Image} The combined image.
  */
 function getGeomorpho90m(aoi) {
+  var elevation = ee.Image('MERIT/DEM/v1_0_3')
+                  .clip(aoi)
+                  .select(['dem'], ['elev']);
   var geomorpho90m = loadAndProcess(collectionNames[0], aoi);
   for (var i = 1; i < collectionNames.length; i++) {
     geomorpho90m = geomorpho90m.addBands(
       loadAndProcess(collectionNames[i], aoi)
     );
   }
-  return geomorpho90m;
+  return geomorpho90m.addBands(elevation);
 }
 
 // Export the function
 exports.getGeomorpho90m = getGeomorpho90m;
 
+// Example usage of the getGeomorpho90m function
+// // Define an area of interest (aoi) as a GeoJSON geometry
+// var aoi = ee.Geometry.Polygon([
+//   [[-123.574829, 45.523064], [-123.574829, 45.530954], 
+//   [-123.561024, 45.530954], [-123.561024, 45.523064]]
+// ]);
+
+// // Call the getGeomorpho90m function with the defined aoi
+// var geomorpho90mImage = getGeomorpho90m(aoi);
+
+// print("geomorpho90m", geomorpho90m)
+
+// var palettes = require('users/gena/packages:palettes')
+// Map.addLayer(geomorpho90m.select('cti'), 
+//               {min: -3, max: 6, palette: palettes.cmocean.Algae[7]}, 
+//               'Compound Topographic Index (CTI)')
