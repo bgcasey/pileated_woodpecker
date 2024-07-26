@@ -131,6 +131,8 @@ scanfi_2020 <- scanfi[[grepl("2020", names(scanfi))]]
 ### 4.1.2 Clip to study area ----
 aoi_tr <- st_transform(aoi, st_crs(scanfi_2020))
 scanfi_2020_ab <- crop(scanfi_2020, aoi_tr)
+# Mask the raster to remove areas outside the polygon
+scanfi_2020_ab <- mask(scanfi_2020_ab, aoi_tr)
 
 writeRaster(scanfi_2020_ab, 
             file = "0_data/manual/predictor/scanfi_2020_ab.tif",
@@ -167,6 +169,9 @@ writeRaster(f_500_mean,
             file = "2_pipeline/tmp/f_500_mean.tif",
             overwrite = TRUE)
 
+# Clean global environment
+rm(scanfi_2020_ab)
+gc()
 
 f_500_mode <- calculate_focal_stat(raster_input = scanfi_2020_ab_cat, 
                                    window_size_meters = 500, 
