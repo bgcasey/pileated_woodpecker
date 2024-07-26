@@ -23,7 +23,7 @@ library(pROC)       # For AUC calculation
 
 ## 1.2. Load custom functions ----
 # including function for getting BRT model stats.
-source("1_code/r_scripts/functions/misc_functions.R") 
+source("1_code/r_scripts/functions/utils.R") 
 
 ## 1.3. Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
