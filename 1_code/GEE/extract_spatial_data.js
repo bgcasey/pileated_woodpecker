@@ -19,11 +19,6 @@
  * of dates for time series data.
  */
 
-/* Import station locations */
-var ss_xy = ee.FeatureCollection(
-  "projects/ee-bgcasey-piwomodels/assets/ss_xy_ab"
-);
-// print(ss_xy.limit(5));
 
 /* Define area of interest */
 var aoi = ee.FeatureCollection('FAO/GAUL_SIMPLIFIED_500m/2015/level1')
@@ -35,6 +30,12 @@ var aoi = ee.FeatureCollection('FAO/GAUL_SIMPLIFIED_500m/2015/level1')
 //           .geometry();
 
 Map.centerObject(aoi);  
+
+/* Import station locations */
+var ss_xy = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/ss_xy_4326"
+).filterBounds(aoi);
+// print(ss_xy.limit(5));
 
 // Convert geometry to a feature for batch.Download
 var aoi1 = ee.FeatureCollection(aoi);

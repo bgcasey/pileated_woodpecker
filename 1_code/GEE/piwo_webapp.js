@@ -445,7 +445,7 @@ var title = ui.Label('Pileated Woodpecker Nest Detection', {
   margin: '10px 0px 0px 8px'
 });
 
-var authors = ui.Label('Dr. Brendan Casey, Simran Baines, Dr. Erin Bayne', {
+var authors = ui.Label('Dr. Brendan Casey, Simran Bains, Dr. Erin Bayne', {
   fontWeight: 'bold',
   margin: '0px 0px 15px 8px'
 });
