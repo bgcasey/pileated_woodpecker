@@ -1,9 +1,9 @@
 /**
- * Title: Get a Time Series of Sentinel-2 Images
- * Author: Brendan Casey
- * Date: 2024-06-23
+ * title: Get a Time Series of Sentinel-2 Images
+ * author: Brendan Casey
+ * date: 2024-06-23
  * 
- * Summary:
+ * description:
  * This script processes Sentinel-2 satellite imagery, calculates selected
  * vegetation indices, and merges the results into a single image collection
  * for a specified time period and area of interest (AOI). 
@@ -47,8 +47,12 @@ exports.s2_fn = function(dates, interval, intervalType, aoi, selectedIndices) {
    */
   var s2_ts = function(d1) {
     var start = ee.Date(d1);
-    var end = start.advance(interval, intervalType);
+    var minStartDate = ee.Date('2019-05-01');
     
+    // Adjust start date if it is before 05/01/2017
+    start = ee.Date(ee.Algorithms.If(start.millis().lt(minStartDate.millis()), minStartDate, start));
+    
+    var end = start.advance(interval, intervalType);
     // Get Sentinel-2 collection for the date range
     var s2Collection = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED')
                           .filterBounds(aoi)
