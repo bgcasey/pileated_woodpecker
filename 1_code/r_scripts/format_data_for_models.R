@@ -1,37 +1,44 @@
 # ---
-# title: "Gather covariates"
+# title: "Format data for models"
 # author: "Brendan Casey"
-# created: "2023-11-17"
-# description: "extracting landcover predictor variables to station locations."
+# created: "2024-07-25"
+# description: 
+#   "This script performs [describe the main purpose of the script].
+#   It includes steps to [briefly describe the main steps or processes].
+#   The script uses [briefly describe data or object inputs]
+#   The final output is [describe the final output]."
 # ---
 
-#Setup ----
+# 1. Setup ----
 
-##Load packages----
-library(terra)
+## 1.1 Load packages ----
+# Include comments for what the packages are used for
+# Example:
+library(tidyverse) # data manipulation and visualization
 
-##Import data----
+## 1.2 Import data ----
+load("0_data/manual/response/wildtrax_cleaned_piwo_with_offset_2024-06-13.rData")
+load("0_data/manual/predictor/xy_scanfi.rData")
+ss_canopy_mean_500 <- read_csv("0_data/manual/predictor/ss_canopy_mean_500.csv") %>%
+  select(-c(`system:index`, .geo))
+ss_ls_mean_500 <- read_csv("0_data/manual/predictor/ss_ls_mean_500.csv")%>%
+  select(-c(`system:index`, .geo))
+ss_terrain_first_00 <- read_csv("0_data/manual/predictor/ss_terrain_first_00.csv")%>%
+  select(-c(`system:index`, .geo))
+ss_s2_mean_500 <- read_csv("0_data/manual/predictor/ss_s2_mean_500.csv")%>%
+  select(-c(`system:index`, .geo))
 
-#### Wildtrax all
-load("0_data/manual/response/bird_station_data_with_offset.Rdata")
+# 2. [heading] ----
+# This section [describe the purpose of this section].
+# The section uses [briefly describe data or object inputs].
+# It includes steps to [briefly describe the main steps or processes].
+# The section produces [describe the section's output].
 
-#### From earth engine
-load("0_data/manual/predictor/wt/ss_xy_nfis.rData")
+# Perform left joins based on the 'location' field
+joined_data <- ss_canopy_mean_500 %>%
+  left_join(ss_ls_mean_500, by = "location") %>%
+  left_join(ss_terrain_first_00, by = "location")
 
-ss_xy_fixed_pointLevel <- read_csv("0_data/manual/predictor/wt/test/ss_xy_fixed_pointLevel.csv")%>%
-  dplyr::select(-c(TWI, HLI))
-
-ss_xy_fixed <- read_csv("0_data/manual/predictor/wt/test/ss_xy_fixed.csv")%>%
-  dplyr::select(c(location, contains('TWI'), contains('HLI'), contains('canopy')))
-
-
-ss_xy_lc_150 <- read_csv("0_data/manual/predictor/wt/test/ss_xy_lc_150.csv")
-ss_xy_lc_565 <- read_csv("0_data/manual/predictor/wt/test/ss_xy_lc_565.csv")
-ss_xy_lc_1000 <- read_csv("0_data/manual/predictor/wt/test/ss_xy_lc_1000.csv")
-
-ss_xy_ts_1000 <- read_csv("0_data/manual/predictor/wt/test/ss_xy_ts_1000.csv")
-ss_xy_ts_565 <- read_csv("0_data/manual/predictor/wt/test/ss_xy_ts_565.csv")
-ss_xy_ts_150 <- read_csv("0_data/manual/predictor/wt/test/ss_xy_ts_150.csv")
 
 
 ##////////////////////////////////////////////////////////////////
