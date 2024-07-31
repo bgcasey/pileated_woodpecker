@@ -94,7 +94,7 @@ xy_c_mean_500 <- extract_raster_values(xy_locations = ss_xy_4326,
 filtered_layers <- scanfi[[grepl("nfiLandCover", names(scanfi))]]
 
 # Define the mode function
-mode_fun <- function(x) {
+mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
 }
@@ -102,7 +102,7 @@ mode_fun <- function(x) {
 xy_lc_mode_500 <- extract_raster_values(xy_locations = ss_xy_4326,
                                         raster = filtered_layers,
                                         buffer = 500,
-                                        fun = mode_fun)
+                                        fun = mode)
 
 xy_lc_first <- extract_raster_values(xy_locations = ss_xy_4326,
                                      raster = filtered_layers)
