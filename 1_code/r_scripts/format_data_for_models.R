@@ -124,7 +124,8 @@ cov <- ss_ls_mean_500 %>%
 data_brt <- ss_dat %>%
   inner_join(cov) %>%
   select(PIWO_occ, PIWO_offset, survey_effort, everything(), 
-         -location, -date, -month, -year)
+         -location, -date, -month, -year) %>%
+  as.data.frame() # needs to be a dataframe for dismo::gbm.step()
 
 save(data_brt, 
      file = "0_data/manual/formatted_for_models/data_for_models.rData")
