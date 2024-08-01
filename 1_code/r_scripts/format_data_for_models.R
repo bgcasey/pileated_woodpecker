@@ -2,10 +2,10 @@
 # title: "Format data for models"
 # author: "Brendan Casey"
 # created: "2024-07-25"
-# description: 
-#   "This script prepares data for boosted regression trees. It 
-#   includes steps to load, clean, and merge response and predictor 
-#   variables.The script uses various CSV files and .RData objects as 
+# description:
+#   "This script prepares data for boosted regression trees. It
+#   includes steps to load, clean, and merge response and predictor
+#   variables.The script uses various CSV files and .RData objects as
 #   inputs and outputs a formatted table ready for modelling."
 # ---
 
@@ -17,15 +17,17 @@ library(tidyverse) # data manipulation and visualization
 ## 1.2 Import data ----
 # Function to read and process GEE csv's
 read_and_process <- function(file_path, digits = 5) {
-  columns_to_remove <- c("month", "start_date", "end_date", "lat", 
-                         "lon")
-  
+  columns_to_remove <- c(
+    "month", "start_date", "end_date", "lat",
+    "lon"
+  )
+
   read_csv(file_path) %>%
     select(-c(`system:index`, .geo)) %>%
     mutate(across(where(is.character), trimws)) %>%
     mutate(across(where(is.numeric), ~ round(., digits))) %>%
     select(-any_of(columns_to_remove)) %>%
-    filter(location != "WLNP-2-3" & location != 'BBSAB:3:STOP44') %>%
+    filter(location != "WLNP-2-3" & location != "BBSAB:3:STOP44") %>%
     distinct() %>%
     select(location, everything())
 }
@@ -34,13 +36,17 @@ read_and_process <- function(file_path, digits = 5) {
 load("0_data/manual/response/wildtrax_cleaned_piwo_with_offset_2024-06-13.rData")
 load("0_data/manual/predictor/xy_scanfi.rData")
 ss_canopy_mean_500 <- read_and_process(
-  "0_data/manual/predictor/ss_canopy_mean_500.csv")
+  "0_data/manual/predictor/ss_canopy_mean_500.csv"
+)
 ss_ls_mean_500 <- read_and_process(
-  "0_data/manual/predictor/ss_ls_mean_500.csv")
+  "0_data/manual/predictor/ss_ls_mean_500.csv"
+)
 ss_terrain_first_00 <- read_and_process(
-  "0_data/manual/predictor/ss_terrain_first_00.csv")
+  "0_data/manual/predictor/ss_terrain_first_00.csv"
+)
 ss_s2_mean_500 <- read_and_process(
-  "0_data/manual/predictor/ss_s2_mean_500.csv")
+  "0_data/manual/predictor/ss_s2_mean_500.csv"
+)
 
 # 2. Tidy response data frame ----
 # Clean and summarize the response data
@@ -49,15 +55,17 @@ ss_dat <- wildtrax_cleaned_piwo_with_offset %>%
   mutate(PIWO_abund = sum(PIWO, na.rm = TRUE)) %>%
   ungroup() %>%
   mutate(PIWO_occ = ifelse(PIWO_abund >= 1, 1, 0)) %>%
-  dplyr::select(location, date, year, month, 
-                survey_effort, PIWO_occ, PIWO_offset) %>%
+  dplyr::select(
+    location, date, year, month,
+    survey_effort, PIWO_occ, PIWO_offset
+  ) %>%
   distinct()
 
 # 3. Merge predictor datasets ----
-# Combine multiple predictor tables into one. Clean and format 
+# Combine multiple predictor tables into one. Clean and format
 # columns.
 
-cov <- ss_ls_mean_500 %>% 
+cov <- ss_ls_mean_500 %>%
   left_join(ss_s2_mean_500) %>%
   left_join(xy_scanfi) %>%
   left_join(ss_canopy_mean_500) %>%
@@ -118,16 +126,17 @@ cov <- ss_ls_mean_500 %>%
   select(-matches("\\d{4}"))
 
 # 4. Prepare data for models ----
-# Merge cleaned response data with predictor data, select relevant 
+# Merge cleaned response data with predictor data, select relevant
 # columns for modeling, and save.
 
 data_brt <- ss_dat %>%
   inner_join(cov) %>%
-  select(PIWO_occ, PIWO_offset, survey_effort, everything(), 
-         -location, -date, -month, -year) %>%
+  select(
+    PIWO_occ, PIWO_offset, survey_effort, everything(),
+    -location, -date, -month, -year
+  ) %>%
   as.data.frame() # needs to be a dataframe for dismo::gbm.step()
 
-save(data_brt, 
-     file = "0_data/manual/formatted_for_models/data_for_models.rData")
-
-
+save(data_brt,
+  file = "0_data/manual/formatted_for_models/data_for_models.rData"
+)
