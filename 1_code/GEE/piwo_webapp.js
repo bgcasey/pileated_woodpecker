@@ -28,41 +28,48 @@
  */
 var studyArea = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/Alberta_boundary"),
-    ssXy = ee.FeatureCollection(
-  "projects/ee-bgcasey-piwomodels/assets/ss_xy_ab"),
-    piwoCavities = ee.FeatureCollection(
+  ssxy = ee.FeatureCollection(
+  "projects/ee-bgcasey-piwomodels/assets/ss_xy_4326_piwo"),
+  piwoCavities = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/cavities_xy"),
-    piwoSearched = ee.FeatureCollection(
+  piwoSearched = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/piwo_searched"),
-    pipeline = ee.FeatureCollection(
+  pipeline = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/17324_ProjectBoundary_nad83_csrs_z12"),
-    piwoOcc = ee.Image(
+  piwoOcc = ee.Image(
   "projects/ee-bgcasey-piwomodels/assets/brt_ls_hlc_terrain_canopy_29_2_p_piwo"),
   piwoReclass = ee.Image(
-  "projects/ee-bgcasey-piwomodels/assets/p_piwo_reclass");
+  "projects/ee-bgcasey-piwomodels/assets/p_piwo_reclass"),
+  piwoABMI = ee.Image(
+  "projects/ee-bgcasey-piwomodels/assets/abmi_piwo_scaled_2021");
 
-print(piwoCavities)
 var aoi = studyArea.geometry();
-// print(uaLogo)
 
 // Create a mask for the study area and apply it to the predictive map
 var boundaryMask = ee.Image.constant(0).paint(aoi, 1);
-piwoOcc = piwoOcc.updateMask(piwoOcc.mask().multiply(boundaryMask));
-piwoReclass = piwoReclass.updateMask(piwoReclass.mask()
-                                     .multiply(boundaryMask));
+piwoOcc = piwoOcc.updateMask(
+  piwoOcc.mask().multiply(boundaryMask));
+piwoReclass = piwoReclass.updateMask(
+  piwoReclass.mask().multiply(boundaryMask));
+piwoABMI = piwoABMI.updateMask(
+  piwoABMI.mask().multiply(boundaryMask));
+
+// Clip the points to the aoi
+var ssxy_filtered = ssxy.filterBounds(aoi).filter(
+  ee.Filter.gt('PIWO', 0));
 
 // Clear the data from previous steps
 boundaryMask = null;
 aoi = null;
-studyArea = null
-
+studyArea = null;
 
 /**
  * SECTION 2: Setting UI Map Layers
- * This section sets up the map layers for the UI. It defines the color 
- * palette for the terrain and the visualization parameters for the 
- * occupancy. It also creates map layers for the pipeline route, PIWO 
- * cavities, and searched areas, and adds them to the map.
+ * This section sets up the map layers for the UI. It defines 
+ * the color palette for the terrain and the visualization 
+ * parameters for the occupancy. It also creates map layers 
+ * for the pipeline route, PIWO cavities, and searched areas, 
+ * and adds them to the map.
  */
 
 // Define the color palettes for rasters
@@ -72,7 +79,6 @@ var rTerrain20 = ["00A600", "13AD00", "28B400", "3EBB00",
   "#ECB176", "EDB48E", "EEBCA7", "F0C9C0", "F1DBD9", "F2F2F2"];
 
 var rTerrain04 = ["00A600",  "8BD000",  "EBB25E", "F2F2F2"];
-
 
 // Define the visualization parameters for the occupancy
 var visOccu = {min: 0, max: 1, palette: rTerrain20.reverse()};        
@@ -89,29 +95,39 @@ var piwoReclassLayer = ui.Map.Layer(piwoReclass, visReclass,
   "Pileated woodpecker habitat suitability").setShown(1)
   .setOpacity(.7);  
 
+// Define the visualization parameters for the ABMI map
+var visABMI = {min: 0, max: 100, palette: [
+  "F2F2F2", "F1DBD9", "F0C9C0", "EEBCA7", "EDB48E", 
+  "#ECB176", "EBB25E", "E9B846", "E8C32E", "E7D217", 
+  "E6E600", "C6DE00", "#A7D700", "8BD000", "70C900", 
+  "56C200", "3EBB00", "28B400", "13AD00", "00A600"
+]};   
+
+var piwoABMILayer = ui.Map.Layer(piwoABMI, visABMI, 
+  "Pileated woodpecker habitat suitability (ABMI)").setShown(1)
+  .setOpacity(.7);  
+
 var pipelineLyr = ui.Map.Layer(pipeline.style(
   {color: '05f9e2', fillColor: '#fdbf6f20', width: 1}), {}, 
-  "pipeline route").setShown(0);
-Map.add(pipelineLyr);
+  "Pathways Pipeline").setShown(1);
 
 var piwoSearchedLyr = ui.Map.Layer(piwoSearched.style(
   {color: 'd8f400', pointSize: 3}), {}, 
   "Searched areas").setShown(1);
-Map.add(piwoSearchedLyr);
 
-
-
-
-// var piwoCavitiesLyr = ui.Map.Layer(piwoCavities.style(
-//   {color: 'f50b86', pointSize: 3}), {}, "PIWO Cavities").setShown(1);
-// Map.add(piwoCavitiesLyr);
+var ssxyLyr = ui.Map.Layer(ssxy_filtered.style(
+  {color: '191970', pointSize: 1}), {}, 
+  "Detected PIWO").setShown(1);
 
 var piwoCavitiesLyr = ui.Map.Layer(piwoCavities.map(function(f) {
-    return f.set({
-        'style': {
-            color: f.get("color"),
-            pointSize: f.get("size"),
-    }})}).style({styleProperty: "style"})).setShown(1);
+  return f.set({
+    'style': {
+      color: f.get("color"),
+      pointSize: f.get("size"),
+    }
+  });
+}).style({styleProperty: "style"}), {}, "Woodpecker cavities").setShown(1);
+
 Map.add(piwoCavitiesLyr);
 
 /**
@@ -122,12 +138,10 @@ Map.add(piwoCavitiesLyr);
 
 // Occupancy raster
 // Create a panel for the legend
-// Occupancy raster
-// Create a panel for the legend
 var legendRaster = ui.Panel({
   style: {
-    position: 'bottom-right', 
-    padding: '5px 15px', 
+    position: 'bottom-right',
+    padding: '5px 15px',
     shown: false
   }
 });
@@ -136,8 +150,8 @@ var legendRaster = ui.Panel({
 var legendTitle = ui.Label({
   value: 'Probability of Pileated Woodpecker occupancy',
   style: {
-    fontWeight: 'bold', 
-    fontSize: '12px', 
+    fontWeight: 'bold',
+    fontSize: '12px',
     margin: '0 0 10px 0px'
   }
 });
@@ -146,11 +160,11 @@ legendRaster.add(legendTitle);
 // Create a function to generate color bar parameters
 function makeColorBarParams(palette) {
   return {
-    bbox: [0, 0, 1, 0.1], 
-    dimensions: '100x10', 
+    bbox: [0, 0, 1, 0.1],
+    dimensions: '100x10',
     format: 'png',
-    min: 0, 
-    max: 1, 
+    min: 0,
+    max: 1,
     palette: palette
   };
 }
@@ -160,8 +174,8 @@ var colorBarOccu = ui.Thumbnail({
   image: ee.Image.pixelLonLat().select(0),
   params: makeColorBarParams(visOccu.palette),
   style: {
-    stretch: 'horizontal', 
-    margin: '0px 8px', 
+    stretch: 'horizontal',
+    margin: '0px 8px',
     maxHeight: '24px'
   }
 });
@@ -170,36 +184,31 @@ legendRaster.add(colorBarOccu);
 // Create labels for the legend
 var legendLabelsOccu = ui.Panel({
   widgets: [
-    ui.Label(visOccu.min, {margin: '4px 8px'}),
-    ui.Label(
-      ((visOccu.max - visOccu.min) / 2 + visOccu.min), {
+    ui.Label('low', {margin: '4px 8px'}),
+    ui.Label('', {
         margin: '4px 8px', 
         textAlign: 'center', 
         stretch: 'horizontal'
       }
     ),
-    ui.Label(visOccu.max, {margin: '4px 8px'})
+    ui.Label('high', {margin: '4px 8px'})
   ],
   layout: ui.Panel.Layout.flow('horizontal')
 });
 legendRaster.add(legendLabelsOccu);
 Map.add(legendRaster);
 
+
 // Reclassified raster
 // Define the values and their corresponding colors
 var values = [0, 1, 2, 3];
 var colors = ["F2F2F2", "#EBB25E", "#8BD000", "#00A600"];
-var labels = [
-  "low",
-  "moderate", 
-  "high", 
-  "very high"
-];
+var labels = ["low", "moderate", "high", "very high"];
 
 // Create a legend
 var legendReclass = ui.Panel({
   style: {
-    position: 'bottom-right', 
+    position: 'bottom-right',
     shown: false
   }
 });
@@ -207,7 +216,6 @@ legendReclass.add(ui.Label(
   'Probability of detecting PIWO vocalization', 
   {fontWeight: 'bold'}
 ));
-
 
 // Add one row per value
 values.forEach(function(val, index) {
@@ -222,11 +230,62 @@ values.forEach(function(val, index) {
     value: labels[index],
     style: {margin: '0 0 4px 6px'}
   });
-  legendReclass.add(ui.Panel([colorBox, description], 
-    ui.Panel.Layout.Flow('horizontal')));
+  legendReclass.add(ui.Panel(
+    [colorBox, description], 
+    ui.Panel.Layout.Flow('horizontal')
+  ));
 });
 
 Map.add(legendReclass);
+
+// Custom Legend for ABMI Layer
+var legendABMI = ui.Panel({
+  style: {
+    position: 'bottom-right',
+    padding: '5px 15px',
+    shown: false
+  }
+});
+
+// Add a title to the legend
+var legendTitleABMI = ui.Label({
+  value: 'Pileated Woodpecker Habitat Suitability (ABMI)',
+  style: {
+    fontWeight: 'bold',
+    fontSize: '12px',
+    margin: '0 0 10px 0px'
+  }
+});
+legendABMI.add(legendTitleABMI);
+
+// Create the color bar for the legend
+var colorBarABMI = ui.Thumbnail({
+  image: ee.Image.pixelLonLat().select(0),
+  params: makeColorBarParams(visABMI.palette),
+  style: {
+    stretch: 'horizontal',
+    margin: '0px 8px',
+    maxHeight: '24px'
+  }
+});
+legendABMI.add(colorBarABMI);
+
+// Create labels for the legend
+var legendLabelsABMI = ui.Panel({
+  widgets: [
+    ui.Label('low', {margin: '4px 8px'}),
+    ui.Label('', {
+        margin: '4px 8px', 
+        textAlign: 'center', 
+        stretch: 'horizontal'
+      }
+    ),
+    ui.Label('high', {margin: '4px 8px'})
+  ],
+  layout: ui.Panel.Layout.flow('horizontal')
+});
+legendABMI.add(legendLabelsABMI);
+Map.add(legendABMI);
 
 // Woodpecker cavities
 // Define the values, colors, and sizes
@@ -238,7 +297,8 @@ var sizes = [10, 15, 20, 25]; // Size for legend circles (pixels)
 var legendCavities = ui.Panel({
   style: {
     position: 'bottom-right',
-    padding: '8px 15px'
+    padding: '8px 15px',
+    shown: true
   }
 });
 
@@ -264,7 +324,6 @@ var legendSubtitleCavities = ui.Label({
 });
 legendCavities.add(legendSubtitleCavities);
 
-
 // Function to create a legend item
 function createLegendItem(color, size, label) {
   var colorCircle = ui.Label({
@@ -282,7 +341,10 @@ function createLegendItem(color, size, label) {
     style: {margin: '0 0 4px 0', padding: '0'}
   });
   
-  return ui.Panel([colorCircle, description], ui.Panel.Layout.Flow('horizontal'));
+  return ui.Panel(
+    [colorCircle, description], 
+    ui.Panel.Layout.Flow('horizontal')
+  );
 }
 
 // Add legend items
@@ -292,15 +354,11 @@ for (var i = 0; i < diameters.length; i++) {
 
 Map.add(legendCavities);
 
-
-
-
-
 /**
  * SECTION 4: Toggle Map Features
- * This section creates checkboxes to toggle the visibility of different 
- * map features. It includes checkboxes for the pipeline route, PIWO 
- * nest cavities, searched areas, and PIWO map.
+ * This section creates checkboxes to toggle the visibility of 
+ * different map features. It includes checkboxes for the pipeline 
+ * route, PIWO nest cavities, searched areas, and PIWO map.
  */
 
 /**
@@ -310,25 +368,41 @@ Map.add(legendCavities);
  * @param {string} color - The color of the checkbox icon.
  * @param {boolean} shown - The initial visibility of the layer.
  * @param {Object} layer - The map layer associated with the checkbox.
- * @returns {Object} panel - A panel containing the checkbox, icon, and label.
+ * @returns {Object} panel - A panel containing the checkbox, icon, 
+ * and label.
  */
 function createStyledCheckbox(label, color, shown, layer) {
   var checkbox;
 
-  // If the layer is the PIWO occurrence layer or the reclassified layer, 
-  // create a checkbox that toggles the visibility of the 
-  // layer and the corresponding legend.
-  if (layer === piwoOccLayer || layer === piwoReclassLayer) {
+  // If the layer is the PIWO occurrence layer, reclassified layer, 
+  // or the ABMI layer, create a checkbox that toggles the visibility 
+  // of the layer and the corresponding legend.
+  if (layer === piwoOccLayer || layer === piwoReclassLayer || 
+      layer === piwoABMILayer || layer === piwoCavitiesLyr) {
     checkbox = ui.Checkbox('', shown);
     checkbox.onChange(function(checked) {
       if (checked) {
         Map.layers().insert(0, layer); // Add layer at the bottom
-        (layer === piwoOccLayer ? legendRaster : legendReclass)
-        .style().set('shown', true);
+        if (layer === piwoOccLayer) {
+          legendRaster.style().set('shown', true);
+        } else if (layer === piwoReclassLayer) {
+          legendReclass.style().set('shown', true);
+        } else if (layer === piwoABMILayer) {
+          legendABMI.style().set('shown', true);
+        } else if (layer === piwoCavitiesLyr) {
+          legendCavities.style().set('shown', true);
+        }
       } else {
         Map.remove(layer);
-        (layer === piwoOccLayer ? legendRaster : legendReclass)
-        .style().set('shown', false);
+        if (layer === piwoOccLayer) {
+          legendRaster.style().set('shown', false);
+        } else if (layer === piwoReclassLayer) {
+          legendReclass.style().set('shown', false);
+        } else if (layer === piwoABMILayer) {
+          legendABMI.style().set('shown', false);
+        } else if (layer === piwoCavitiesLyr) {
+          legendCavities.style().set('shown', false);
+        }
       }
     });
   } else {
@@ -336,7 +410,11 @@ function createStyledCheckbox(label, color, shown, layer) {
     // of the layer.
     checkbox = ui.Checkbox('', shown);
     checkbox.onChange(function(checked) {
-      layer.setShown(checked);
+      if (checked) {
+        Map.layers().insert(0, layer); // Add layer at the bottom
+      } else {
+        Map.remove(layer);
+      }
     });
   }
 
@@ -345,16 +423,15 @@ function createStyledCheckbox(label, color, shown, layer) {
   // Set the icon for the checkbox based on the layer.
   if (layer === piwoCavitiesLyr) {
     icon = ui.Label('\u25cf', {color: '#' + color});
+  } else if (layer === ssxyLyr) {
+    icon = ui.Label('\u25cf', {color: '#' + color});
   } else if (layer === pipelineLyr) {
     icon = ui.Label('\u25A1', {color: '#' + color});
   } else if (layer === piwoSearchedLyr) {
     icon = ui.Label('\u25cf', {color: '#' + color});  
-  // } else if (layer === pipelineLyr || layer === piwoSearchedLyr) {
-  //   icon = ui.Label('\u25A1', {color: '#' + color});  
-  } else if (layer === piwoOccLayer) {
+  } else if (layer === piwoOccLayer || layer === piwoReclassLayer || 
+             layer === piwoABMILayer) {
     icon = ui.Label('\u25A1', {color: '#' + color});
-  } else if (layer === piwoReclassLayer) {
-    icon = ui.Label('\u25A1', {color: '#' + color}); 
   } else {
     icon = ui.Label('', {color: '#' + color});
   }
@@ -379,15 +456,20 @@ var checkboxMaster = ui.Panel({
 checkboxMaster.add(createStyledCheckbox(
   'Pathways Pipeline', '05f9e2', false, pipelineLyr));
 checkboxMaster.add(createStyledCheckbox(
-  'Woodpecker cavities', 'f50b86', true, 
-  piwoCavitiesLyr));
+  'Woodpecker cavities', 'f50b86', true, piwoCavitiesLyr));
 checkboxMaster.add(createStyledCheckbox(
-  'Searched areas', 'd8f400', true, piwoSearchedLyr));
+  'Searched areas', 'd8f400', false, piwoSearchedLyr));
 checkboxMaster.add(createStyledCheckbox(
-  'Pileated woodpecker occupancy', "FFFFFF", false, piwoOccLayer));
+  'Point count suveys with PIWO detections', '191970', false, ssxyLyr));    
 checkboxMaster.add(createStyledCheckbox(
-  'Probability of detecting PIWO vocalization', "FFFFFF", false, 
-  piwoReclassLayer));
+  'Probability of detecting PIWO vocalization¹', "FFFFFF", false, piwoOccLayer));
+// checkboxMaster.add(createStyledCheckbox(
+//   'Probability of detecting PIWO vocalization¹', "FFFFFF", false, 
+//   piwoReclassLayer));
+checkboxMaster.add(createStyledCheckbox(
+  "ABMI's PIWO habitat suitability map²", "FFFFFF", false, 
+  piwoABMILayer));
+
 
 /**
  * SECTION 5: Download Buttons
@@ -473,19 +555,21 @@ var description2 = ui.Label(
   'This project provides a set of tools to help users identify ' +
   'where Pileated Woodpecker are likely to be and where ' +
   'additional monitoring is and is not needed to find nests. ' +
-  'Here we present our latest predictive map (based on where ' +
+  'Here we present our latest predictive map¹ (based on where ' +
   'machine learning models and province-wide remote sensing ' +
   'variables predict you will hear/see a Pileated Woodpecker). ' +
   'Areas that we have searched for nest cavities and known nest ' +
   'cavity locations are also shown. The predictive map will be ' +
   'validated and updated regularly as new data comes in so ' +
-  'changes are to be expected. Data and survey protocols are ' +
+  'changes are to be expected. We also include a Pileated ' +
+  'Woodpecker habitat suitability map produced by the Alberta ' +
+  'Biodiversity Monitoring Institute (ABMI) and Boreal Avian ' +
+  'Modelling Project (BAM).² Data and survey protocols are ' +
   'available on request through the links provided below. ' +
   'Please direct all correspondence to Dr. Brendan Casey ' +
   '(bgcasey@ualberta.ca)',  
   {margin: '0px 30px 15px 8px'}
 );
-
 
 var github = ui.Label('https://github.com/bgcasey/pileated_woodpecker', {
   color: '0000EE',
@@ -507,7 +591,6 @@ var submitData = ui.Label('Submit Data', {
   {margin: '0px 0px 0px 20px'
 });
 
-
 var requestData = ui.Label(
   'Request Data', 
   {
@@ -524,7 +607,7 @@ var citationHeader = ui.Label('Data citation:', {
 });
 
 var citation = ui.Label(
-  'Brendan Casey, Bayne, E., & Baines, S. (2024). ' +
+  '1. Brendan Casey, Bayne, E., & Baines, S. (2024). ' +
   'Improving Pileated Woodpecker nest cavity detection (v0.10). ' +
   'Zenodo. https://doi.org/10.5281/zenodo.11396172',
   {
@@ -533,6 +616,16 @@ var citation = ui.Label(
   }
 );
 
+var abmi_citation = ui.Label(
+  '2. Alberta Biodiversity Monitoring Institute and Boreal Avian ' + 
+  'Modelling Project. 2023. Pileated Woodpecker (Dryocopus' + 
+  'pileatus). ABMI Website: ' + 
+  'https://beta.abmi.ca/species/dryocopus-pileatus.', 
+  {
+    color: '000000',
+    margin: '0px 30px 10px 8px'
+  }
+);
 
 function createSeparator(color) {
   return ui.Panel([
@@ -550,8 +643,6 @@ function createSeparator(color) {
 //   color: 'red'
 // });
 
-
-// Add sections to the main panel
 mainPanel
   // .add(label)
   .add(title)
@@ -570,6 +661,8 @@ mainPanel
   .add(createSeparator('FFFFFF'))
   .add(citationHeader)
   .add(citation)
+  .add(abmi_citation)
+
 
 /**
  * SECTION 7: Customize Basemap
@@ -577,6 +670,7 @@ mainPanel
  * https://snazzymaps.com/style/28780/at, 
  * and centers the map on the study area.
  */
+
   
 var Basemap = [
     {
