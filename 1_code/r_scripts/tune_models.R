@@ -1,20 +1,20 @@
-# ---
-# title: "Tune models"
-# author: "Brendan Casey"
-# created: "2024-06-10"
-# description: >
-#   "This script tunes boosted regression tree models by
+# Title: Tune models
+# Author: Brendan Casey
+# Created: 2024-06-10
+
+# Description:
+#   This script tunes boosted regression tree models by
 #   using a hyperparameter grid to systematically evaluate
 #   combinations of model parameters. Code is based on
 #   https://uc-r.github.io/gbm_regression and Kuhn, M., &
-#   Johnson, K. (2013). Applied predictive modeling (Vol.
+#   Johnson, K. (2013). Applied predictive modelling (Vol.
 #   26, p. 13). New York: Springer. It produces a dataframe
 #   of models using different parameter combinations sorted
-#   by RMSE."
-# ---
+#   by RMSE.
 
 # 1. Setup ----
 ## 1.1 Load packages ----
+library(dplyr) # Data wrangling
 library(gbm) # For fitting generalized boosted regression models
 library(doParallel) # For parallel processing
 library(foreach) # For parallel processing
@@ -23,10 +23,11 @@ library(progress) # For progress bar
 ## 1.2 Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
 
-# 2. Tune model parameters ----
+## 1.3 Set seed ----
 set.seed(123) # Ensure reproducibility
 
-## 2.1 Create hyperparameter grid ----
+# 2. Tune model parameters ----
+## 2.1 Create hyper parameter grid ----
 hyper_grid <- expand.grid(
   shrinkage = c(.001, .01),
   interaction.depth = c(2, 3),
