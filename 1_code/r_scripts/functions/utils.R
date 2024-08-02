@@ -110,7 +110,8 @@ calculate_brt_stats <- function(model) {
     (cvstats$deviance.null - cvstats$deviance.mean) / 
     cvstats$deviance.null
   cvstats$model<- rep(model_name, nrow(cvstats))
-
+  cvstats$discrimination.mean <- model$cv.statistics$discrimination.mean
+  
   # Calculate variable importance
   varimp <- as.data.frame(model$contributions) %>%
     pivot_wider(names_from = var, values_from = rel.inf)
