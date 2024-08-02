@@ -123,7 +123,8 @@ cov <- ss_ls_mean_500 %>%
     )
   ) %>%
   # Remove columns that include a year in the name
-  select(-matches("\\d{4}"))
+  select(-matches("\\d{4}"))%>%
+  rename_all(~ gsub("-", "_", .))
 
 # 4. Prepare data for models ----
 # Merge cleaned response data with predictor data, select relevant
