@@ -1,3 +1,4 @@
+# ---
 # title: "Tune models"
 # author: "Brendan Casey"
 # created: "2024-06-10"
@@ -10,6 +11,7 @@
 #   26, p. 13). New York: Springer. It produces a dataframe
 #   of models using different parameter combinations sorted
 #   by RMSE.
+# ---
 
 # 1. Setup ----
 ## 1.1 Load packages ----
@@ -73,7 +75,7 @@ results <- foreach(
   # Train model
   gbm.tune <- gbm(
     formula = PIWO_occ ~ . + offset(o),
-    distribution = "gaussian",
+    distribution = "bernoulli",
     data = random_data,
     n.trees = 5000,
     interaction.depth = hyper_grid$interaction.depth[i],
