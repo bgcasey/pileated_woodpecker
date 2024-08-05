@@ -120,7 +120,20 @@ cov <- ss_ls_mean_500 %>%
       abs(year - 2015) <= 2 ~ prcB_2015_mean_500,
       abs(year - 2020) <= 2 ~ prcB_2020_mean_500,
       TRUE ~ NA_real_
-    )
+    ),
+    # CreatenfiLandCover_mode_500 based on the closest year
+    nfiLandCover_mode_500 = case_when(
+      abs(year - 1985) <= 2 ~ nfiLandCover_1985_mode_500,
+      abs(year - 1990) <= 2 ~ nfiLandCover_1990_mode_500,
+      abs(year - 1995) <= 2 ~ nfiLandCover_1995_mode_500,
+      abs(year - 2000) <= 2 ~ nfiLandCover_2000_mode_500,
+      abs(year - 2005) <= 2 ~ nfiLandCover_2005_mode_500,
+      abs(year - 2010) <= 2 ~ nfiLandCover_2010_mode_500,
+      abs(year - 2015) <= 2 ~ nfiLandCover_2015_mode_500,
+      abs(year - 2020) <= 2 ~ nfiLandCover_2020_mode_500,
+      TRUE ~ NA_real_
+    ),
+    nfiLandCover_mode_500 = as.factor(nfiLandCover_mode_500)
   ) %>%
   # Remove columns that include a year in the name
   select(-matches("\\d{4}")) %>%
@@ -133,9 +146,10 @@ cov <- ss_ls_mean_500 %>%
 data_brt <- ss_dat %>%
   inner_join(cov) %>%
   select(
-    PIWO_occ, PIWO_offset, survey_effort, everything(),
-    -location, -date, -month, -year
+    PIWO_occ, PIWO_offset, survey_effort, year, everything(),
+    -location, -date, -month
   ) %>%
+  mutate(year = as.factor(year)) %>%
   as.data.frame() # needs to be a dataframe for dismo::gbm.step()
 
 save(data_brt,
