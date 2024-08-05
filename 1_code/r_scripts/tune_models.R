@@ -19,13 +19,16 @@ library(dplyr) # Data wrangling
 library(gbm) # For fitting generalized boosted regression models
 library(doParallel) # For parallel processing
 library(foreach) # For parallel processing
-library(progress) # For progress bar
 
 ## 1.2 Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
+data_brt <- na.omit(data_brt) 
 
 ## 1.3 Set seed ----
 set.seed(123) # Ensure reproducibility
+
+## 1.4. Set save file path ----
+path <- "3_output/models/all_vars_na_omit"
 
 # 2. Tune model parameters ----
 ## 2.1 Create hyperparameter grid ----
@@ -55,14 +58,6 @@ random_data <- dplyr::select(random_data, -c(PIWO_offset))
 cl <- makeCluster(detectCores() - 1) # Use all but one core
 registerDoParallel(cl)
 
-# Initialize progress bar
-pb <- progress_bar$new(
-  format = "  Tuning [:bar] :percent in :elapsed, ETA: :eta",
-  total = nrow(hyper_grid),
-  clear = FALSE,
-  width = 60
-)
-
 # Parallel processing with foreach
 results <- foreach(
   i = 1:nrow(hyper_grid),
@@ -87,9 +82,6 @@ results <- foreach(
     verbose = FALSE
   )
 
-  # Update progress bar
-  pb$tick()
-
   # Return results
   data.frame(
     optimal_trees = which.min(gbm.tune$valid.error),
@@ -108,4 +100,7 @@ stopCluster(cl)
 # Arrange by minimum RMSE and save
 tuned_param <- hyper_grid %>%
   dplyr::arrange(min_RMSE)
-save(tuned_param, file = "2_pipeline/store/tuned_param.rData")
+
+save(tuned_param,
+  file = paste0(path, "/tuned_param.rData")
+)
