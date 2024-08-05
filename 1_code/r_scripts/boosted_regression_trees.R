@@ -26,28 +26,30 @@ library(tidyverse) # For data manipulation
 library(dismo) # For species distribution modelling and BRTs
 library(gbm) # For boosted regression trees
 library(pROC) # For AUC calculation
+library(parallel) # For parallel processing
 
-## 1.2. Load custom functions ----
+## 1.2. Set file directory path ----
+path <- "3_output/models/all_vars_na_omit"
+
+## 1.3. Load custom functions ----
 # including function for getting BRT model stats.
 source("1_code/r_scripts/functions/utils.R")
 
-## 1.3. Load data ----
+## 1.4. Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
+data_brt <- na.omit(data_brt)
 
-## 1.4. Load tuned parameters ----
-load("2_pipeline/store/tuned_param.rData")
+## 1.5. Load tuned parameters ----
+load(paste0(path, "/tuned_param.rData"))
 
-## 1.5. Set seed ----
+## 1.6. Set seed ----
 set.seed(123)
 
-## 1.6. Randomize data ----
+## 1.7. Randomize data ----
 random_index <- sample(1:nrow(data_brt), nrow(data_brt))
 random_data <- data_brt[random_index, ]
 o <- random_data$PIWO_offset
 random_data <- dplyr::select(random_data, -c(PIWO_offset))
-
-## 1.7. Set save file path ----
-path <- "3_output/models/all_vars"
 
 # 2. Boosted Regression Tree ----
 ## 2.1. Apply `dismo::gbm.step` to tuned parameters ----
@@ -101,7 +103,7 @@ random_data_simp <- random_data %>%
 
 ## 3.5. Re tune model ----
 # Re tune model with reduced number of predictors using tune_models.R.
-load("2_pipeline/store/tuned_param_2.rData")
+load(paste0(path, "/tuned_param_2.rData"))
 
 ## 3.6 BRT Second Iteration ----
 brt_2 <- gbm.step(
@@ -165,7 +167,6 @@ bootstrap_brt <- function(data, n_iterations) {
     deviance.mean = numeric(),
     correlation.mean = numeric(),
     discrimination.mean = numeric(),
-    discrimination.mean = numeric(),
     deviance.null = numeric(),
     deviance.explained = numeric(),
     predict_AUC = numeric(),
@@ -180,10 +181,11 @@ bootstrap_brt <- function(data, n_iterations) {
   # Initialize a list to store models
   models_list <- list()
 
-  # Bootstrapped models
-  for (i in 1:n_iterations) {
+  # Define the function to run a single bootstrap iteration
+  run_iteration <- function(i) {
     # Sampling with replacement for bootstrap
-    samp <- sample(nrow(data), round(0.75 * nrow(data)),
+    samp <- sample(nrow(data),
+      round(0.75 * nrow(data)),
       replace = TRUE
     )
     train_data <- data[samp, ]
@@ -231,11 +233,19 @@ bootstrap_brt <- function(data, n_iterations) {
     model_stats$model <- model_name
     model_stats$predict_AUC <- auc_value
 
-    # Append to the accumulating dataframe
-    all_stats_df <- rbind(all_stats_df, model_stats)
+    return(list(model = model, stats = model_stats))
+  }
 
-    # Store the model in the list
-    models_list[[model_name]] <- model
+  # Run the bootstrap iterations in parallel
+  results <- mclapply(1:n_iterations,
+    run_iteration,
+    mc.cores = detectCores() - 1
+  )
+
+  # Combine the results
+  for (result in results) {
+    models_list[[result$stats$model]] <- result$model
+    all_stats_df <- rbind(all_stats_df, result$stats)
   }
 
   return(list(models = models_list, stats_df = all_stats_df))
