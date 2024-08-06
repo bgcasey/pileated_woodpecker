@@ -29,7 +29,7 @@ library(pROC) # For AUC calculation
 library(parallel) # For parallel processing
 
 ## 1.2. Set file directory path ----
-path <- "3_output/models/all_vars_na_omit"
+path <- "3_output/models/s2_vars"
 
 ## 1.3. Load custom functions ----
 # including function for getting BRT model stats.
@@ -38,6 +38,7 @@ source("1_code/r_scripts/functions/utils.R")
 ## 1.4. Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
 data_brt <- na.omit(data_brt)
+data_brt <- data_brt %>% dplyr::select(-starts_with("ls_"))
 
 ## 1.5. Load tuned parameters ----
 load(paste0(path, "/tuned_param.rData"))

@@ -23,12 +23,13 @@ library(foreach) # For parallel processing
 ## 1.2 Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
 data_brt <- na.omit(data_brt) 
+data_brt <- data_brt %>% dplyr::select(-starts_with("ls_"))
 
 ## 1.3 Set seed ----
 set.seed(123) # Ensure reproducibility
 
 ## 1.4. Set save file path ----
-path <- "3_output/models/all_vars_na_omit"
+path <- "3_output/models/s2_vars"
 
 # 2. Tune model parameters ----
 ## 2.1 Create hyperparameter grid ----
@@ -71,7 +72,7 @@ results <- foreach(
   gbm.tune <- gbm(
     formula = PIWO_occ ~ . + offset(o),
     distribution = "bernoulli",
-    data = random_data,
+    data = random_data_simp,
     n.trees = 5000,
     interaction.depth = hyper_grid$interaction.depth[i],
     shrinkage = hyper_grid$shrinkage[i],
