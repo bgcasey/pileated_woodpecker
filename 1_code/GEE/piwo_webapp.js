@@ -603,7 +603,7 @@ var requestData = ui.Label(
 
 var citationHeader = ui.Label('Data citation:', {
   fontWeight: 'bold',
-  margin: '0px 0px 0px 8px'
+  margin: '0px 0px 15px 8px'
 });
 
 var citation = ui.Label(
@@ -658,7 +658,7 @@ mainPanel
   .add(createSeparator('FFFFFF'))
   .add(requestData)
   .add(submitData)
-  .add(createSeparator('FFFFFF'))
+  .add(createSeparator('2D333C'))
   .add(citationHeader)
   .add(citation)
   .add(abmi_citation)
