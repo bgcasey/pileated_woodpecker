@@ -156,96 +156,76 @@ scanfi_2020_ab <- rast("0_data/manual/predictor/scanfi/scanfi_2020_ab.tif")
 
 ## 4.2 Focal statistics ----
 
-### 4.2.1 Percent broadleaf ----
-prcB <- scanfi_2020_ab$prcB_2020
-names(prcB) <- "prcB"
+### 4.2.1 Define the function ----
+# This function processes a raster band by calculating focal
+# statistics, resampling it to a specified resolution, and saving
+# the result to a file.
+process_raster_band <- function(raster_band, window_size_meters,
+                                fun, output_file,
+                                resample_resolution = c(100, 100),
+                                resample_method = "bilinear") {
+  # Calculate focal statistics
+  raster_mean <- calculate_focal_stat(
+    raster_input = raster_band,
+    window_size_meters = window_size_meters,
+    fun = fun
+  )
 
-prcB_mean_500 <- calculate_focal_stat(
-  raster_input = prcB,
-  window_size_meters = 500,
-  fun = "mean"
+  # Define the target raster with the desired resolution
+  extent_mean <- ext(raster_mean)
+  raster_resampled <- rast(
+    extent = extent_mean,
+    resolution = resample_resolution,
+    crs = crs(raster_band)
+  )
+
+  # Resample the original raster to the new resolution
+  raster_resampled <- resample(raster_mean, raster_resampled,
+    method = resample_method
+  )
+
+  # Write the raster to file
+  writeRaster(raster_resampled,
+    file = output_file,
+    overwrite = TRUE
+  )
+
+  # Clean up
+  rm(raster_mean, raster_resampled)
+  gc()
+}
+
+### 4.2.2 Rename raster layers ----
+names(scanfi_2020_ab) <- gsub("_2020$", "", names(scanfi_2020_ab))
+
+### 4.2.3 Apply the function to all numeric raster layers ----
+for (layer_name in names(scanfi_2020_ab)) {
+  if (layer_name != "nfiLandCover") {
+    raster_band <- scanfi_2020_ab[[layer_name]]
+    output_file <- paste0(
+      "0_data/manual/predictor/scanfi/",
+      layer_name, "_mean_500.tif"
+    )
+    process_raster_band(
+      raster_band,
+      500,
+      "mean",
+      output_file
+    )
+  }
+}
+
+### 4.2.4 Apply the function to nfiLandCover ----
+# apply the function with modal resampling
+layer_name <- "nfiLandCover"
+raster_band <- scanfi_2020_ab[[layer_name]]
+output_file <- paste0(
+  "0_data/manual/predictor/scanfi/",
+  layer_name, "_mode_500.tif"
 )
-
-writeRaster(prcB_mean_500,
-  file = "0_data/manual/predictor/scanfi/prcB_mean_500.tif",
-  overwrite = TRUE
+process_raster_band(raster_band,
+  500,
+  "modal",
+  output_file,
+  resample_method = "mode"
 )
-
-rm(prcB_mean_500)
-gc()
-
-### 4.2.2 Height ----
-height <- scanfi_2020_ab$height_2020
-names(height) <- "height"
-
-height_mean_500 <- calculate_focal_stat(
-  raster_input = height_2020,
-  window_size_meters = 500,
-  fun = "mean"
-)
-
-writeRaster(height_mean_500,
-  file = "0_data/manual/predictor/scanfi/height_mean_500.tif",
-  overwrite = TRUE
-)
-
-rm(height_mean_500)
-rm(height_2020)
-gc()
-
-### 4.2.3 Biomass ----
-biomass <- scanfi_2020_ab$biomass_2020
-names(biomass) <- "biomass"
-
-biomass_mean_500 <- calculate_focal_stat(
-  raster_input = biomass,
-  window_size_meters = 500,
-  fun = "mean"
-)
-
-writeRaster(biomass_mean_500,
-  file = "0_data/manual/predictor/scanfi/biomass_mean_500.tif",
-  overwrite = TRUE
-)
-
-rm(biomass_mean_500)
-rm(biomass)
-gc()
-
-### 4.2.4 Closure ----
-closure <- scanfi_2020_ab$closure_2020
-names(closure) <- "closure"
-
-closure_mean_500 <- calculate_focal_stat(
-  raster_input = closure,
-  window_size_meters = 500,
-  fun = "mean"
-)
-
-writeRaster(closure_mean_500,
-  file = "0_data/manual/predictor/scanfi/closure_mean_500.tif",
-  overwrite = TRUE
-)
-
-rm(closure_mean_500)
-rm(closure_2020)
-gc()
-
-### 4.2.5 NFI Land Cover ----
-nfiLandCover <- scanfi_2020_ab$nfiLandCover_2020
-names(nfiLandCover) <- "nfiLandCover"
-
-nfiLandCover_mode_500 <- calculate_focal_stat(
-  raster_input = nfiLandCover,
-  window_size_meters = 500,
-  fun = "modal"
-)
-
-writeRaster(nfiLandCover_mode_500,
-  file = "0_data/manual/predictor/scanfi/nfiLandCover_mode_500.tif",
-  overwrite = TRUE
-)
-
-rm(nfiLandCover_mode_500)
-rm(nfiLandCover)
-gc()
