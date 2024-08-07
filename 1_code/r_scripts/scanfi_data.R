@@ -18,15 +18,10 @@
 ## 1.1 Load packages ----
 library(terra) # for raster data manipulation
 library(sf) # for spatial data manipulation
-# library(devtools) # get functions from github repo
 
 # Load the function from the GitHub URL
 ## 1.2 Load custom functions ----
 source("1_code/r_scripts/functions/utils.R")
-# source_url(paste0(
-#   "https://raw.githubusercontent.com/",
-#   "bgcasey/r_functions/main/calculate_focal_statistics.R"
-# ))
 
 ## 1.3 Load study area ----
 aoi <- st_read("0_data/external/alberta/Alberta.shp")
@@ -254,87 +249,3 @@ writeRaster(nfiLandCover_mode_500,
 rm(nfiLandCover_mode_500)
 rm(nfiLandCover)
 gc()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## 4.3 Stack all ----
-nfiLandCover_mode_500 <- rast("2_pipeline/tmp/f_500_mode.tif")
-closure_mean_500 <- rast("closure_2020_500_mean.tif")
-biomass_mean_500 <- rast("biomass_2020_500_mean.tif")
-height_mean_500 <- rast("height_2020_500_mean.tif")
-prcB_mean_500 <- rast("2_pipeline/tmp/prcB_2020_500_mean.tif")
-scanfi_2020_focal <- c(f_500_mode, closure_mean_500, biomass_mean_500, height_mean_500, prcB_mean_500)
-
-
-# Rename the layers to match the object names
-names(closure_mean_500) <- "closure_mean_500"
-names(biomass_mean_500) <- "biomass_mean_500"
-names(height_mean_500) <- "height_mean_500"
-names(prcB_mean_500) <- "prcB_mean_500"
-names(nfiLandCover_mode_500) <- "nfiLandCover_mode_500"
-
-
-nfiLandCover_mode_500 <- f_500_mode
-# Print the new names to verify
-
-names(nfiLandCover_mode_500) <- "nfiLandCover_mode_500"
-
-print(names(closure_mean_500))
-print(names(biomass_mean_500))
-print(names(height_mean_500))
-print(names(prcB_mean_500))
-
-
-## 4.4 Sort layers alphabetically ----
-layer_names <- names(scanfi_2020_focal)
-layer_names_sorted <- sort(layer_names)
-scanfi_2020_focal <- scanfi_2020_focal[[layer_names_sorted]]
-
-# Get the current names
-current_names <- names(scanfi_2020_focal)
-
-# Remove "_2020" from the names
-new_names <- gsub("_2020", "", current_names)
-
-# Assign the new names to the raster layers
-names(scanfi_2020_focal) <- new_names
-
-
-
-# Remove the raster objects
-rm(f_500_mode, closure_mean_500, biomass_mean_500, height_mean_500, prcB_mean_500)
-
-# Optionally, run garbage collection to free up memory
-gc()
-
-
-aoi_tr <- st_transform(aoi, st_crs(scanfi_2020_focal))
-# Mask the raster to remove areas outside the polygon
-scanfi_2020_focal <- mask(scanfi_2020_focal, aoi_tr)
-
-writeRaster(scanfi_2020_focal,
-  file = "0_data/manual/predictor/scanfi_2020_focal.tif",
-  overwrite = TRUE
-)
-
-
-writeRaster(scanfi_2020_focal,
-  "0_data/manual/predictor/scanfi_2020_focal.tif",
-  overwrite = TRUE,
-  wopt = list(datatype = "FLT4S", progress = 1, memfrac = 0.5)
-)
