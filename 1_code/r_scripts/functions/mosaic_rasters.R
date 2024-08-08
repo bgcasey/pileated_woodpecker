@@ -43,7 +43,7 @@ m <- terra::mosaic(rasters, fun = "mean")
 ## 2.3 Save as .tif ----
 writeRaster(
   m, 
-  filename = paste0("0_data/manual/predictor/gee/focal_image_500.tif"),  
+  filename = "0_data/manual/predictor/gee/focal_image_500.tif",  
   overwrite = TRUE
 )
 
