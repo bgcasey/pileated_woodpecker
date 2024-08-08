@@ -1,75 +1,51 @@
 # ---
-# title: "Mosaic rasters downloaded from earth engine
+# title: "Mosaic rasters downloaded from earth engine"
 # author: "Brendan Casey"
-# created: "2023-12-05"
+# created: "2024-08-05"
+# description: 
+#   This script creates a mosaic of raster files downloaded from 
+#   Google Earth Engine. It includes steps to list directories, 
+#   load raster files, and generate a mean mosaic of these rasters. 
 # ---
 
-#Setup----
-##Load Packages----
-library(raster)
-library(terra)
-library(tidyverse)
-library(sf)
-library(foreach)
+# 1. Setup ----
 
-## set temp directory ----
-## Set temp directory to an external drive to free up harddrive space
-rasterOptions(tmpdir=file.path("../r_tmp")) 
-terraOptions(tempdir=file.path("../r_tmp")) 
+## 1.1 Load packages ----
+library(terra) # processing rasters
+library(tidyverse) # data manipulation and visualization
+library(sf) # handling spatial vector data
 
+## 1.2 Import data ----
+# Load your data here
+# Example:
+# study_area <- st_read("0_data/external/Alberta/alberta.shp")
 
-# Mosaic rasters----
-### Load study area----
-# study_area<-st_read("0_data/external/Alberta/alberta.shp")
+# 2. Mosaic rasters ----
+# This section creates a mosaic of raster files from a list of .tif 
+# files in a directory.
 
-### List directories----
-path_name<-"~/Google_Drive/My Drive/PIWO_raster_neighborhood (1)/"
-bl<-list.dirs(path=path_name, full.names = F, recursive = F)
+## 2.1 List directories ----
+path_name <- paste0("/Users/brendancasey/Library/CloudStorage/",
+                    "GoogleDrive-bgcasey@ualberta.ca/My Drive/",
+                    "gee_exports/")
 
+fl <- list.files(
+  path_name, 
+  pattern = 'focal_image_500.*\\.tif$', 
+  recursive = TRUE, 
+  full.names = TRUE
+)
 
-fl <- list.files(path=paste0(path_name, bl[1]), pattern = '*.tif$', recursive = T, full.names = T)
-rsrc <- terra::sprc(fl)
-m <- terra::mosaic(rsrc, fun="mean")
-writeRaster(m, filename=paste0("0_data/manual/predictor/raster_mosaics/all_fixed_focalAll_resampled.tif"),  overwrite=T)
+## 2.2 Load and mosaic rasters ----
+rasters <- terra::sprc(fl)
+m <- terra::mosaic(rasters, fun = "mean")
 
-fl <- list.files(path=paste0(path_name, bl[2]), pattern = '*.tif$', recursive = T, full.names = T)
-rsrc <- terra::sprc(fl)
-m <- terra::mosaic(rsrc, fun="mean")
-writeRaster(m, filename=paste0("0_data/manual/predictor/raster_mosaics/all_ts_1000.tif"),  overwrite=T)
-
-fl <- list.files(path=paste0(path_name, bl[3]), pattern = '*.tif$', recursive = T, full.names = T)
-rsrc <- terra::sprc(fl)
-m <- terra::mosaic(rsrc, fun="mean")
-writeRaster(m, filename=paste0("0_data/manual/predictor/raster_mosaics/all_ts_150.tif"),  overwrite=T)
-
-fl <- list.files(path=paste0(path_name, bl[4]), pattern = '*.tif$', recursive = T, full.names = T)
-rsrc <- terra::sprc(fl)
-m <- terra::mosaic(rsrc, fun="mean")
-writeRaster(m, filename=paste0("0_data/manual/predictor/raster_mosaics/all_ts_565.tif"),  overwrite=T)
-
-
-##/////////////////////////////////////////////
-
-# Stack rasters----
-
-
-## Read each raster----
-raster1 <- rast("0_data/manual/predictor/raster_mosaics/all_ts_150.tif")
-raster2 <- rast("0_data/manual/predictor/raster_mosaics/all_ts_565.tif")
-raster3 <- rast("0_data/manual/predictor/raster_mosaics/all_ts_1000.tif")
-raster4 <-rast("0_data/manual/predictor/raster_mosaics/all_fixed_focalAll_resampled.tif")
-raster5<-rast("~/Google_Drive/My Drive/PIWO_raster_neighborhood/lc_150_2019.tif")
-raster6<-rast("~/Google_Drive/My Drive/PIWO_raster_neighborhood/lc_565_2019.tif")
-raster7<-rast("~/Google_Drive/My Drive/PIWO_raster_neighborhood/lc_1000_2019.tif")
-raster8<-rast("~/Google_Drive/My Drive/PIWO_raster_neighborhood/all_fixed_2.tif")
-
-## Stack the rasters----
-stacked_rasters<-c(raster1, raster2, raster3, raster4, raster5, raster6, raster7, raster8)
-
-##Save the stacked raster to a new file----
-writeRaster(stacked_rasters, filename = "0_data/manual/predictor/raster_mosaics/cov_all.tif", overwrite=T)
-
-
+## 2.3 Save as .tif ----
+writeRaster(
+  m, 
+  filename = paste0("0_data/manual/predictor/gee/focal_image_500.tif"),  
+  overwrite = TRUE
+)
 
 
 
