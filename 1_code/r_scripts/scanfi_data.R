@@ -125,7 +125,7 @@ xy_scanfi <- xy_c_mean_500 %>%
 
 save(xy_scanfi, file = "0_data/manual/predictor/xy_scanfi.rData")
 
-# 4. Create raster for predictions ----
+# 4. Create a focal raster ----
 # This section creates a raster for model predictions using focal
 # statistics. The section uses the SCANFI multiband raster and an sf
 # object of the area of interest. It includes steps to filter raster
@@ -138,11 +138,17 @@ save(xy_scanfi, file = "0_data/manual/predictor/xy_scanfi.rData")
 scanfi_2020 <- scanfi[[grepl("2020", names(scanfi))]]
 
 ### 4.1.2 Clip to study area ----
-aoi_tr <- st_transform(aoi, st_crs(scanfi_2020))
+# Reproject to EPSG:3347
+# Define the target CRS (EPSG:3347)
+target_crs <- "EPSG:3347"
+aoi_tr <- st_transform(aoi, st_crs(target_crs))
+scanfi_2020_ab <- project(scanfi_2020_ab, target_crs)
+
 scanfi_2020_ab <- crop(scanfi_2020, aoi_tr)
+scanfi_2020_ab <- mask(scanfi_2020_ab, aoi_tr)
 
 writeRaster(scanfi_2020_ab,
-  file = "0_data/manual/predictor/scanfi/scanfi_2020_ab.tif",
+  file = "0_data/manual/predictor/scanfi/scanfi_2020_ab_3.tif",
   overwrite = TRUE
 )
 
@@ -152,7 +158,7 @@ rm(list = setdiff(ls(), lsf.str()))
 # Trigger garbage collection
 gc()
 
-scanfi_2020_ab <- rast("0_data/manual/predictor/scanfi/scanfi_2020_ab.tif")
+scanfi_2020_ab <- rast("0_data/manual/predictor/scanfi/scanfi_2020_ab_3.tif")
 
 ## 4.2 Focal statistics ----
 
@@ -204,7 +210,7 @@ for (layer_name in names(scanfi_2020_ab)) {
     raster_band <- scanfi_2020_ab[[layer_name]]
     output_file <- paste0(
       "0_data/manual/predictor/scanfi/",
-      layer_name, "_mean_500.tif"
+      layer_name, "_mean_500_2.tif"
     )
     process_raster_band(
       raster_band,
@@ -221,11 +227,61 @@ layer_name <- "nfiLandCover"
 raster_band <- scanfi_2020_ab[[layer_name]]
 output_file <- paste0(
   "0_data/manual/predictor/scanfi/",
-  layer_name, "_mode_500.tif"
+  layer_name, "_mode_500_2.tif"
 )
 process_raster_band(raster_band,
   500,
   "modal",
   output_file,
   resample_method = "mode"
+)
+
+# 5. Match extent of other predictors ----
+# This section crops and resamples SCANFI focal rasters to the extent
+# and resolution of a reference raster.
+
+### 5.1 Combine into single image ----
+prcB_mean_500 <- rast(
+  "0_data/manual/predictor/scanfi/prcB_mean_500.tif"
+)
+height_mean_500 <- rast(
+  "0_data/manual/predictor/scanfi/height_mean_500.tif"
+)
+biomass_mean_500 <- rast(
+  "0_data/manual/predictor/scanfi/biomass_mean_500.tif"
+)
+closure_mean_500 <- rast(
+  "0_data/manual/predictor/scanfi/closure_mean_500.tif"
+)
+nfiLandCover_mode_500 <- rast(
+  "0_data/manual/predictor/scanfi/nfiLandCover_mode_500.tif"
+)
+
+scanfi_focal <- c(
+  prcB_mean_500, height_mean_500, biomass_mean_500,
+  closure_mean_500, nfiLandCover_mode_500
+)
+
+### 5.2 Crop and resample ----
+# Bring in GEE raster
+focal_image_500 <- rast(
+  "0_data/manual/predictor/gee/focal_image_500.tif"
+)
+
+# Get the extent of GEE raster
+extent_focal <- ext(focal_image_500)
+
+# Crop to the extent of GEE raster
+scanfi_focal_cropped <- crop(scanfi_focal, extent_focal)
+
+# Resample the cropped raster to match the resolution of GEE raster
+scanfi_focal_resampled <- resample(
+  scanfi_focal_cropped, focal_image_500
+)
+
+# Save
+writeRaster(
+  scanfi_focal_resampled,
+  "0_data/manual/predictor/scanfi/scanfi_focal_500.tif",
+  overwrite = TRUE
 )
