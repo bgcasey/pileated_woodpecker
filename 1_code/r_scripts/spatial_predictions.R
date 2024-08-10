@@ -10,7 +10,7 @@
 # ---
 
 # 1. Setup ----
-## Load packages ----
+## 1.1 Load packages ----
 library(terra)    # For working with rasters
 library(parallel) # For parallel processing
 library(dismo)    # For species distribution modeling
@@ -40,9 +40,11 @@ pred_raster <- c(
 # bootstrap_models
 model_covariates <- bootstrap_models$models$model_1$var.names
 
-# Identify the names in model_covariates that are not in pred_raster
+# Identify the names in model_covariates that are not in 
+# pred_raster
 pred_raster_names <- names(pred_raster)
-missing_in_pred_raster <- setdiff(model_covariates, pred_raster_names)
+missing_in_pred_raster <- setdiff(model_covariates, 
+                                  pred_raster_names)
 
 # Subset the pred_raster to keep only the layers that match 
 # the model covariates
@@ -51,7 +53,7 @@ pred_raster <- subset(pred_raster, model_covariates)
 ## 2.3 Create cropped raster for testing ----
 ### 2.3.1 Dummy AOI ----
 source("1_code/r_scripts/functions/utils.R")
-aoi <- create_buffered_area(lon = -113.578, lat = 55.266,
+aoi <- create_buffered_area(lon = -113.578, lat = 55.266, 
                             buffer_dist = 10)
 aoi <- st_transform(aoi, crs(pred_raster))
 pred_raster <- crop(pred_raster, aoi)
@@ -64,12 +66,8 @@ rm(list = setdiff(ls(), c("pred_raster", "bootstrap_models")))
 # Run garbage collection to free up memory
 gc()
 
-
-
-
-
-# 2. Generate spatial predictions ----
-## 2.1 Define function to make spatial predictions ----
+# 4. Generate spatial predictions ----
+## 4.1 Define function to make spatial predictions ----
 
 #' Generate Spatial Predictions from Models
 #'
@@ -120,7 +118,8 @@ make_spatial_pred <- function(models_list, prediction_grid, n_cores,
         
         # Define file path
         file_path <- file.path(output_dir, 
-                               paste("prediction", i, ".tif", sep = ""))
+                               paste("prediction", i, ".tif", 
+                                     sep = ""))
         
         # Save prediction raster to TIFF file
         writeRaster(prediction, file_path, overwrite = TRUE)
@@ -161,22 +160,22 @@ make_spatial_pred <- function(models_list, prediction_grid, n_cores,
   return(list(mean_raster = mean_raster, sd_raster = sd_raster))
 }
 
-## Apply function to bootstrapped BRTs ----
-output_dir <- "3_output/spatial_predictions/s2_vars_noOff/raw"
+## 4.2 Apply function to bootstrapped BRTs ----
+output_dir <- "3_output/spatial_predictions/s2_vars_noOff"
 
 spatial_pred <- make_spatial_pred(
   bootstrap_models$models[],
   pred_raster,
   n_cores = 10, # Reduce the number of cores
-  output_dir = output_dir
+  output_dir = paste0(output_dir, "/raw")
 )
 
-# Create summary rasters ----
+# 5. Create summary rasters ----
 
-## List prediction rasters ----
+## 5.1 List prediction rasters ----
 raster_files <- list.files(output_dir,
-  pattern = "\\.tif$",
-  full.names = TRUE
+                           pattern = "\\.tif$",
+                           full.names = TRUE
 )
 
 prediction_rasters <- lapply(raster_files, rast)
@@ -187,13 +186,15 @@ prediction_stack <- rast(prediction_rasters)
 # Trigger garbage collection
 gc()
 
-## Calculate mean raster ----
+## 5.2 Calculate mean raster ----
 mean_raster <- app(prediction_stack, mean, na.rm = TRUE)
-writeRaster(mean_raster, "3_output/spatial_predictions/s2_vars/mean_raster.tif", overwrite = TRUE)
+writeRaster(mean_raster, 
+            paste0(output_dir, "mean_raster.tif"), 
+            overwrite = TRUE)
 
-## Calculate sd raster ----
+## 5.3 Calculate sd raster ----
 cv_raster <- app(prediction_stack, sd, na.rm = TRUE)
-writeRaster(sd_raster, "3_output/spatial_predictions/s2_vars/sd_raster.tif", overwrite = TRUE)
-
-
+writeRaster(sd_raster, 
+            paste0(output_dir, "mean_raster.tif"), 
+            overwrite = TRUE)
 
