@@ -22,6 +22,7 @@ aoi <- st_read("0_data/external/alberta/Alberta.shp")
 # This section creates a mosaic of raster files from a list of .tif
 # files in a directory.
 
+
 ## 2.1 List directories ----
 path_name <- paste0(
   "/Users/brendancasey/Library/CloudStorage/",
@@ -29,6 +30,7 @@ path_name <- paste0(
   "gee_exports/"
 )
 
+## 2.2 Focal 500 ----
 fl <- list.files(
   path_name,
   pattern = "focal_image_500.*\\.tif$",
@@ -36,17 +38,40 @@ fl <- list.files(
   full.names = TRUE
 )
 
-## 2.2 Load and mosaic rasters ----
+### 2.2.1 Load and mosaic rasters ----
 rasters <- terra::sprc(fl)
 m <- terra::mosaic(rasters, fun = "mean")
 
-## 2.3 Crop to aoi ----
+### 2.2.2 Crop to aoi ----
 aoi_tr <- st_transform(aoi, st_crs(m))
 m <- mask(m, aoi_tr)
 
-## 2.3 Save as .tif ----
+### 2.2.3 Save as .tif ----
 writeRaster(
   m,
   filename = "0_data/manual/predictor/gee/focal_image_500.tif",
   overwrite = TRUE
+)
+
+## 2.3 Focal 0 ----
+fl <- list.files(
+  path_name,
+  pattern = "focal_image_0.*\\.tif$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+
+### 2.3.1 Load and mosaic rasters ----
+rasters <- terra::sprc(fl)
+m <- terra::mosaic(rasters, fun = "mean")
+
+### 2.3.2 Crop to aoi ----
+aoi_tr <- st_transform(aoi, st_crs(m))
+m <- mask(m, aoi_tr)
+
+### 2.3.3 Save as .tif ----
+writeRaster(
+  m,
+  filename = "0_data/manual/predictor/gee/focal_image_0.tif",
+  overwrite = T
 )
