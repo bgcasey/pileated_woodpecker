@@ -22,14 +22,16 @@ library(foreach) # For parallel processing
 
 ## 1.2 Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
-data_brt <- na.omit(data_brt) 
-data_brt <- data_brt %>% dplyr::select(-starts_with("ls_"))
+data_brt <- data_brt %>% dplyr::select(-starts_with("s2_"))
+data_brt <- na.omit(data_brt)
 
 ## 1.3 Set seed ----
 set.seed(123) # Ensure reproducibility
 
 ## 1.4. Set save file path ----
-path <- "3_output/models/s2_vars"
+# path <- "3_output/models/s2_vars"
+# path <- "3_output/models/s2_vars_noOff"
+path <- "3_output/models/ls_vars_noOff"
 
 # 2. Tune model parameters ----
 ## 2.1 Create hyperparameter grid ----
@@ -70,7 +72,8 @@ results <- foreach(
 
   # Train model
   gbm.tune <- gbm(
-    formula = PIWO_occ ~ . + offset(o),
+    formula = PIWO_occ ~ .,
+    # formula = PIWO_occ ~ . + offset(o),
     distribution = "bernoulli",
     data = random_data_simp,
     n.trees = 5000,
@@ -99,9 +102,9 @@ stopCluster(cl)
 
 ## 3. Save tuned parameters ----
 # Arrange by minimum RMSE and save
-tuned_param <- hyper_grid %>%
+tuned_param_2 <- hyper_grid %>%
   dplyr::arrange(min_RMSE)
 
-save(tuned_param,
-  file = paste0(path, "/tuned_param.rData")
+save(tuned_param_2,
+  file = paste0(path, "/tuned_param_2.rData")
 )

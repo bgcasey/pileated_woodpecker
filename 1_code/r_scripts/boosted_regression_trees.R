@@ -29,7 +29,7 @@ library(pROC) # For AUC calculation
 library(parallel) # For parallel processing
 
 ## 1.2. Set file directory path ----
-path <- "3_output/models/s2_vars"
+path <- "3_output/models/s2_vars_noOff"
 
 ## 1.3. Load custom functions ----
 # including function for getting BRT model stats.
@@ -37,8 +37,10 @@ source("1_code/r_scripts/functions/utils.R")
 
 ## 1.4. Load data ----
 load("0_data/manual/formatted_for_models/data_for_models.rData")
-data_brt <- na.omit(data_brt)
+
+# data_brt <- data_brt %>% dplyr::select(-starts_with("ls_"))
 data_brt <- data_brt %>% dplyr::select(-starts_with("ls_"))
+data_brt <- na.omit(data_brt)
 
 ## 1.5. Load tuned parameters ----
 load(paste0(path, "/tuned_param.rData"))
@@ -49,7 +51,9 @@ set.seed(123)
 ## 1.7. Randomize data ----
 random_index <- sample(1:nrow(data_brt), nrow(data_brt))
 random_data <- data_brt[random_index, ]
-o <- random_data$PIWO_offset
+# o <- random_data$PIWO_offset
+o <- log(random_data$survey_effort)
+# random_data <- dplyr::select(random_data, -c(PIWO_offset))
 random_data <- dplyr::select(random_data, -c(PIWO_offset))
 
 # 2. Boosted Regression Tree ----
@@ -58,7 +62,7 @@ brt_1 <- gbm.step(
   data = random_data,
   gbm.x = 2:ncol(random_data),
   gbm.y = 1,
-  offset = o,
+  # offset = o,
   family = "bernoulli",
   tree.complexity = tuned_param$interaction.depth[1],
   n.minobsinnode = tuned_param$n.minobsinnode[1],
@@ -111,7 +115,7 @@ brt_2 <- gbm.step(
   data = random_data_simp,
   gbm.x = 2:ncol(random_data_simp),
   gbm.y = 1,
-  offset = o,
+  # offset = o,
   family = "bernoulli",
   tree.complexity = tuned_param_2$interaction.depth[1],
   n.minobsinnode = tuned_param_2$n.minobsinnode[1],
@@ -204,7 +208,7 @@ bootstrap_brt <- function(data, n_iterations) {
       data = train_data,
       gbm.x = 2:ncol(train_data),
       gbm.y = 1,
-      offset = o_train,
+      # offset = o_train,
       family = "bernoulli",
       tree.complexity = tuned_param_2$interaction.depth[1],
       n.minobsinnode = tuned_param_2$n.minobsinnode[1],
@@ -257,7 +261,7 @@ bootstrap_brt <- function(data, n_iterations) {
 
 ## 4.2. Run the bootstraps ----
 # Set the number of iterations
-n_iterations <- 50
+n_iterations <- 100
 
 # run the bootstrap function
 random_data_simp$PIWO_offset <- o
