@@ -19,7 +19,6 @@
 library(terra) # for raster data manipulation
 library(sf) # for spatial data manipulation
 
-# Load the function from the GitHub URL
 ## 1.2 Load custom functions ----
 source("1_code/r_scripts/functions/utils.R")
 
