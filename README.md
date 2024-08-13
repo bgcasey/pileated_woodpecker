@@ -19,6 +19,7 @@ Below is an outline of our methodological workflow.
    1. [extract_spatial_data.js](1_code/GEE/extract_spatial_data.js)
    2. [mosaic_rasters.R](1_code/r_scripts/mosaic_rasters.R)
    3. [scanfi_data.R](1_code/r_scripts/scanfi_data.R)
+   4. [extract_natural_regions_and_subregions.R](1_code/r_scripts/extract_natural_regions_and_subregions.R)
 3. [Statistical analyses](documentation/statistical_analyses.md)
    1. [format_data_for_models.R](1_code/r_scripts/format_data_for_models.R)
    2. [tune_models.R](1_code/r_scripts/tune_models.R)
