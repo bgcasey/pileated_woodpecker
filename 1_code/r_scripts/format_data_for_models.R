@@ -35,6 +35,8 @@ read_and_process <- function(file_path, digits = 5) {
 # Import data
 load("0_data/manual/response/wildtrax_cleaned_piwo_with_offset_2024-06-13.rData")
 load("0_data/manual/predictor/xy_scanfi.rData")
+load("0_data/manual/predictor/xy_nat_region.rData")
+
 ss_canopy_mean_500 <- read_and_process(
   "0_data/manual/predictor/ss_canopy_mean_500.csv"
 )
@@ -48,6 +50,7 @@ ss_s2_mean_500 <- read_and_process(
   "0_data/manual/predictor/ss_s2_mean_500.csv"
 )
 
+
 # 2. Tidy response data frame ----
 # Clean and summarize the response data
 ss_dat <- wildtrax_cleaned_piwo_with_offset %>%
@@ -57,7 +60,7 @@ ss_dat <- wildtrax_cleaned_piwo_with_offset %>%
   mutate(PIWO_occ = ifelse(PIWO_abund >= 1, 1, 0)) %>%
   dplyr::select(
     location, date, year, month,
-    survey_effort, PIWO_occ, PIWO_offset
+    survey_effort, x_3978, y_3978, PIWO_occ, PIWO_offset
   ) %>%
   distinct()
 
@@ -70,6 +73,7 @@ cov <- ss_ls_mean_500 %>%
   left_join(xy_scanfi) %>%
   left_join(ss_canopy_mean_500) %>%
   left_join(ss_terrain_first_00) %>%
+  left_join(xy_nat_region) %>%
   dplyr::select(-hasAllBands, -lat, -lon) %>%
   select(location, year, everything()) %>%
   mutate(
@@ -147,7 +151,8 @@ data_brt <- ss_dat %>%
   inner_join(cov) %>%
   select(
     PIWO_occ, PIWO_offset, survey_effort, year, everything(),
-    -location, -date, -month
+    -location, -date, -month, -eastness_first_0, -elev_stdev_first_0,
+    -elev_first_0, -northness_first_0, -nsrcode,
   ) %>%
   mutate(year = as.factor(year)) %>%
   as.data.frame() # needs to be a dataframe for dismo::gbm.step()
