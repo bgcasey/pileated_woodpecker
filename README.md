@@ -23,7 +23,7 @@ Below is an outline of our methodological workflow.
 3. [Statistical analyses](documentation/statistical_analyses.md)
    1. [format_data_for_models.R](1_code/r_scripts/format_data_for_models.R)
    2. [boosted_regression_trees.R](1_code/r_scripts/boosted_regression_trees.R)
-      1. [tune_models.R](1_code/r_scripts/functions/tune_models.R)
+      1. [tune_gbm_model.R](1_code/r_scripts/functions/tune_gbm_model.R)
       2. [bootstrap_brt.R](1_code/r_scripts/functions/bootstrap_brt.R)
    3. [prepare_prediction_grid.R](1_code/r_scripts/prepare_prediction_grid.R)
    5. [spatial_predictions.R](1_code/r_scripts/spatial_predictions.R)
