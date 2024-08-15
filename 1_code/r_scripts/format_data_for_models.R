@@ -23,17 +23,17 @@ read_and_process <- function(file_path, digits = 5) {
   )
 
   read_csv(file_path) %>%
-    select(-c(`system:index`, .geo)) %>%
+    dplyr::select(-c(`system:index`, .geo)) %>%
     mutate(across(where(is.character), trimws)) %>%
     mutate(across(where(is.numeric), ~ round(., digits))) %>%
-    select(-any_of(columns_to_remove)) %>%
+    dplyr::select(-any_of(columns_to_remove)) %>%
     filter(location != "WLNP-2-3" & location != "BBSAB:3:STOP44") %>%
     distinct() %>%
-    select(location, everything())
+    dplyr::select(location, everything())
 }
 
 # Import data
-load("0_data/manual/response/wildtrax_cleaned_piwo_with_offset_2024-06-13.rData")
+load("0_data/manual/response/wildtrax_cleaned_piwo_with_offset_2024-08-14.rData")
 load("0_data/manual/predictor/xy_scanfi.rData")
 load("0_data/manual/predictor/xy_nat_region.rData")
 
@@ -75,7 +75,7 @@ cov <- ss_ls_mean_500 %>%
   left_join(ss_terrain_first_00) %>%
   left_join(xy_nat_region) %>%
   dplyr::select(-hasAllBands, -lat, -lon) %>%
-  select(location, year, everything()) %>%
+  dplyr::select(location, year, everything()) %>%
   mutate(
     # Create biomass_mean_500 based on the closest year
     biomass_mean_500 = case_when(
@@ -140,7 +140,7 @@ cov <- ss_ls_mean_500 %>%
     nfiLandCover_mode_500 = as.factor(nfiLandCover_mode_500)
   ) %>%
   # Remove columns that include a year in the name
-  select(-matches("\\d{4}")) %>%
+  dplyr::select(-matches("\\d{4}")) %>%
   rename_all(~ gsub("-", "_", .))
 
 # 4. Prepare data for models ----
@@ -149,7 +149,7 @@ cov <- ss_ls_mean_500 %>%
 
 data_brt <- ss_dat %>%
   inner_join(cov) %>%
-  select(
+  dplyr::select(
     PIWO_occ, PIWO_offset, survey_effort, year, everything(),
     -location, -date, -month, -eastness_first_0, -elev_stdev_first_0,
     -elev_first_0, -northness_first_0, -nsrcode,
