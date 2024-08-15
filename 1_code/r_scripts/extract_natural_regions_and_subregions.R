@@ -34,7 +34,7 @@ nat <- nat %>%
     nsrname = to_snake_case(NSRNAME),
     nsrcode = NSRCODE
   ) %>%
-  select(nrname, nsrname, nsrcode)
+  dplyr::select(nrname, nsrname, nsrcode)
 
 #### 1.2.2 Load point locations ----
 load("0_data/manual/spatial/ss_xy_4326.rData")
@@ -65,28 +65,45 @@ save(xy_nat_region,
 # 4. Rasterize Data ----
 ## 4.1 Create raster template ----
 # Define the extent and resolution for the raster
-raster_template <- rast(ext(nat), 
-                          res = 100, 
-                          crs = st_crs(nat)$proj4string
-                          )
+raster_template <- rast(ext(nat),
+  res = 100,
+  crs = st_crs(nat)$proj4string
+)
 
 ## 4.2 Rasterize the spatial data ----
 # Rasterize the 'nat' spatial object
-nat_r_raster <- rasterize(nat, raster_template, field = "NRNAME")
-snake_case_values <- setNames(to_snake_case(unique_values), unique_values)
+nat_r_raster <- rasterize(nat, raster_template, field = "nrname")
+nat_sr_raster <- rasterize(nat, raster_template, field = "nsrname")
 
-nat_sr_raster <- rasterize(nat, raster_template, field = "NSRNAME")
+nat_raster <- c(nat_r_raster, nat_sr_raster)
 
-## 4.3 Save Raster Data ----
-# This section saves the rasterized data to a file. The section uses
-# the rasterized data from the previous step. It includes steps to 
-# save the raster data to a specified file path. The section produces
-# a raster file containing the rasterized spatial data.
+# 5. Match to the extent of GEE predictors ----
+# This section crops and resamples the rasters to the extent
+# and resolution of a reference raster from GEE.
 
-## 3.1 Save rasterized data ----
-writeRaster(nat_raster, 
-            filename = "0_data/manual/predictor/nat_raster.tif", 
-            format = "GTiff", 
-            overwrite = TRUE)
+## 5.1 Setup ----
+# Bring in GEE raster
+reference <- rast(
+  "0_data/manual/predictor/gee/focal_image_500.tif"
+)
 
+# Get the extent of GEE raster
+extent_focal <- ext(reference)
 
+# Reproject
+nat_raster <- project(nat_raster, crs(reference))
+
+## 5.2 Crop and resample ----
+# Crop to the extent of GEE raster
+nat_raster_cropped <- crop(nat_raster, extent_focal)
+
+# Resample the cropped raster to match the resolution of GEE raster
+nat_raster_resampled <- resample(
+  nat_raster_cropped, reference
+)
+
+## 5.3 Save Raster Data ----
+writeRaster(nat_raster_resampled,
+  filename = "0_data/manual/predictor/nat_raster.tif",
+  overwrite = TRUE
+)
