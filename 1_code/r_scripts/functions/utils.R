@@ -81,52 +81,7 @@ points_to_squares <- function(points, radius) {
 
 ## ////////////////////////////////////////////////////////////////
 
-# ## calculate_brt_stats ----
-# # Funtion to get statistics from a brt model.
-# calculate_brt_stats <- function(model) {
-#   # Automatically get the name of the model variable
-#   model_name <- deparse(substitute(model))
-#   
-#   # Calculate CV stats
-#   cvstats <- as.data.frame(model$cv.statistics[c(1, 3, 5)])
-#   cvstats$deviance.null <- model$self.statistics$mean.null
-#   cvstats$deviance.explained <- 
-#     (cvstats$deviance.null - cvstats$deviance.mean) / 
-#     cvstats$deviance.null
-#   cvstats$model_name<- rep(model_name, nrow(cvstats))
-#   colnames(cvstats)[colnames(cvstats) == "discrimination.mean"] <- "AUC"
-  
-  # Calculate variable importance
-## calculate_brt_stats ----
-# Funtion to get statistics from a brt model.
-calculate_brt_stats <- function(model) {
-  # Automatically get the name of the model variable
-  model_name <- deparse(substitute(model))
-  
-  # Calculate CV stats
-  cvstats <- as.data.frame(model$cv.statistics[c(1, 3, 5)])
-  cvstats$deviance.null <- model$self.statistics$mean.null
-  cvstats$deviance.explained <- 
-    (cvstats$deviance.null - cvstats$deviance.mean) / 
-    cvstats$deviance.null
-  cvstats$model<- rep(model_name, nrow(cvstats))
-  cvstats$discrimination.mean <- model$cv.statistics$discrimination.mean
-  
-  # Calculate variable importance
-  varimp <- as.data.frame(model$contributions) %>%
-    pivot_wider(names_from = var, values_from = rel.inf)
-  
-  # Combine cvstats and varimp into a single data frame
-  combined_df <- bind_cols(cvstats, varimp)
-  
-  # Move "model_name" to the first column
-  combined_df <- combined_df[c("model", 
-                               setdiff(names(combined_df), 
-                                       "model"))]
-  
-  # Return a list containing both CV stats and variable importance
-  return(combined_df)
-}
+
 
 
 create_buffered_area <- function(lon, lat, buffer_dist_km) {
