@@ -33,22 +33,19 @@ file_paths <- c(
 # list the rasters
 pred_raster <- rast(lapply(file_paths, rast))
 
-## 1.3 Load custom functions ----
-# including function for getting BRT model stats.
-source("1_code/r_scripts/functions/split_raster.R")
-
 # 2. Create year and survey effort layers ----
 # Create a year raster where every cell equals 2022
 year_raster <- rast(pred_raster$nrname)
 values(year_raster) <- 2022
 names(year_raster) <- "year"
-year_raster <- mask(year_raster, aoi_tr)
+aoi <- st_transform(aoi, crs(pred_raster[[1]]))
+year_raster <- mask(year_raster, aoi)
 
 # Create a survey effort raster where every cell equals 3
 survey_effort_raster <- rast(pred_raster$nrname)
 values(survey_effort_raster) <- 3
 names(survey_effort_raster) <- "survey_effort"
-survey_effort_raster <- mask(survey_effort_raster, aoi_tr)
+survey_effort_raster <- mask(survey_effort_raster, aoi)
 
 # 3. Create single prediction grid ----
 # Combine all rasters
@@ -67,6 +64,9 @@ writeRaster(pred_raster,
 # 4. Divide Raster into Smaller Chunks ----
 # This section divides the raster into smaller chunks for easier
 # processing and analysis.
+
+## Load custom functions ----
+source("1_code/r_scripts/functions/split_raster.R")
 
 ## Set number of tiles
 n_rows <- 3
