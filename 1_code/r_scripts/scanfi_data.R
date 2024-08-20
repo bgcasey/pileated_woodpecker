@@ -147,7 +147,7 @@ scanfi_2020_ab <- crop(scanfi_2020, aoi_tr)
 scanfi_2020_ab <- mask(scanfi_2020_ab, aoi_tr)
 
 writeRaster(scanfi_2020_ab,
-  file = "0_data/manual/predictor/scanfi/scanfi_2020_ab_3.tif",
+  file = "0_data/manual/predictor/scanfi/scanfi_2020_ab.tif",
   overwrite = TRUE
 )
 
@@ -157,7 +157,7 @@ rm(list = setdiff(ls(), lsf.str()))
 # Trigger garbage collection
 gc()
 
-scanfi_2020_ab <- rast("0_data/manual/predictor/scanfi/scanfi_2020_ab_3.tif")
+scanfi_2020_ab <- rast("0_data/manual/predictor/scanfi/scanfi_2020_ab.tif")
 
 ## 4.2 Focal statistics ----
 
@@ -168,7 +168,7 @@ scanfi_2020_ab <- rast("0_data/manual/predictor/scanfi/scanfi_2020_ab_3.tif")
 process_raster_band <- function(raster_band, window_size_meters,
                                 fun, output_file,
                                 resample_resolution = c(100, 100),
-                                resample_method = "bilinear") {
+                                resample_method) {
   # Calculate focal statistics
   raster_mean <- calculate_focal_stat(
     raster_input = raster_band,
@@ -205,28 +205,29 @@ names(scanfi_2020_ab) <- gsub("_2020$", "", names(scanfi_2020_ab))
 
 ### 4.2.3 Apply the function to all numeric raster layers ----
 for (layer_name in names(scanfi_2020_ab)) {
-  if (layer_name != "nfiLandCover") {
+  if (layer_name != "nfiLandCover_2020") {
     raster_band <- scanfi_2020_ab[[layer_name]]
     output_file <- paste0(
       "0_data/manual/predictor/scanfi/",
-      layer_name, "_mean_500_2.tif"
+      layer_name, "_mean_500.tif"
     )
     process_raster_band(
       raster_band,
       500,
       "mean",
-      output_file
+      output_file,
+      resample_method = "bilinear"
     )
   }
 }
 
 ### 4.2.4 Apply the function to nfiLandCover ----
 # apply the function with modal resampling
-layer_name <- "nfiLandCover"
+layer_name <- "nfiLandCover_2020"
 raster_band <- scanfi_2020_ab[[layer_name]]
 output_file <- paste0(
   "0_data/manual/predictor/scanfi/",
-  layer_name, "_mode_500_2.tif"
+  layer_name, "_mode_500_a.tif"
 )
 process_raster_band(raster_band,
   500,
@@ -274,9 +275,26 @@ extent_focal <- ext(focal_image_500)
 scanfi_focal_cropped <- crop(scanfi_focal, extent_focal)
 
 # Resample the cropped raster to match the resolution of GEE raster
-scanfi_focal_resampled <- resample(
-  scanfi_focal_cropped, focal_image_500
-)
+
+# Initialize an empty list to store the resampled layers
+resampled_layers <- list()
+
+# Loop through each layer in the scanfi_focal_cropped raster
+for (layer_name in names(scanfi_focal_cropped)) {
+  if (layer_name == "nfiLandCover_mode_500") {
+    # Resample using the mode method for the specific layer
+    resampled_layer <- resample(scanfi_focal_cropped[[layer_name]], 
+                                focal_image_500, method = "mode")
+  } else {
+    # Resample using the bilinear method for all other layers
+    resampled_layer <- resample(scanfi_focal_cropped[[layer_name]], 
+                                focal_image_500, method = "bilinear")
+  }
+  # Add the resampled layer to the list
+  resampled_layers[[layer_name]] <- resampled_layer
+}
+
+scanfi_focal_resampled <- rast(resampled_layers)
 
 # Save
 writeRaster(
