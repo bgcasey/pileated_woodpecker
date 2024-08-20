@@ -32,37 +32,37 @@ make_spatial_pred <- function(models_list, prediction_grid, n_cores,
   if (!dir.exists(output_dir)) {
     dir.create(output_dir, recursive = TRUE)
   }
-  
+
   # Step 2: Define the function to run a single prediction
   run_prediction <- function(i) {
     tryCatch(
       {
         model <- models_list[[i]]
-        
+
         # Generate predictions
         prediction <- predict(prediction_grid, model,
-                              type = "response",
-                              n.trees = model$gbm.call$best.trees,
-                              na.rm = TRUE
+          type = "response",
+          n.trees = model$gbm.call$best.trees,
+          na.rm = FALSE
         )
-        
+
         # Define file path
         file_path <- file.path(
           output_dir,
           paste("/raw/prediction", i, ".tif",
-                sep = ""
+            sep = ""
           )
         )
-        
+
         # Save prediction raster to TIFF file
         writeRaster(prediction, file_path, overwrite = TRUE)
-        
+
         # Print completion message
         print(paste("Completed and saved raster", i))
-        
+
         # Trigger garbage collection
         gc()
-        
+
         return(TRUE)
       },
       error = function(e) {
@@ -72,21 +72,21 @@ make_spatial_pred <- function(models_list, prediction_grid, n_cores,
       }
     )
   }
-  
+
   # Step 3: Process all models in parallel
   results <- mclapply(seq_along(models_list), run_prediction,
-                      mc.cores = n_cores
+    mc.cores = n_cores
   )
-  
+
   # Step 4: Check for any errors in the results
   if (any(!unlist(results))) {
     message("Some models encountered errors.")
   }
-  
+
   # Step 5: Calculate mean and standard deviation of the predictions
   prediction_files <- list.files(paste0(output_dir, "/raw"),
-                                 pattern = "prediction.*\\.tif$",
-                                 full.names = TRUE
+    pattern = "prediction.*\\.tif$",
+    full.names = TRUE
   )
   prediction_stack <- rast(prediction_files)
   mean_raster <- mean(prediction_stack, na.rm = TRUE)
