@@ -70,14 +70,15 @@ bootstrap_brt <- function(data, n_iterations, tuned_param) {
                    replace = TRUE)
     train_data <- data[samp, ]
     test_data <- data[-samp, ]
-    o_train <- train_data$PIWO_offset
-    train_data <- dplyr::select(train_data, -PIWO_offset)
-    o_test <- test_data$PIWO_offset
-    test_data <- dplyr::select(test_data, -PIWO_offset)
+    # o_train <- train_data$PIWO_offset
+    # train_data <- dplyr::select(train_data, -PIWO_offset)
+    # o_test <- test_data$PIWO_offset
+    # test_data <- dplyr::select(test_data, -PIWO_offset)
     model <- gbm.step(
       data = train_data,
       gbm.x = 2:ncol(train_data),
       gbm.y = 1,
+      # offset = o_train,
       family = "bernoulli",
       tree.complexity = tuned_param$interaction.depth[1],
       n.minobsinnode = tuned_param$n.minobsinnode[1],
