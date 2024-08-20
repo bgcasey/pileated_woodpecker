@@ -16,6 +16,8 @@ library(parallel) # For parallel processing
 library(dismo) # For species distribution modeling
 library(gbm) # for processing gbm models
 library(sf)
+library(dplyr)
+library(snakecase)
 
 aoi <- st_read("0_data/external/alberta/Alberta.shp")
 
@@ -23,19 +25,17 @@ aoi <- st_read("0_data/external/alberta/Alberta.shp")
 pred_raster <- rast("0_data/manual/predictor/pred_raster.tif")
 
 ## 1.3 Load bootstrapped models ----
-load("3_output/models/s2_vars_noOff/bootstrap_models.rData")
+load("3_output/models/ls_noOff_noYear/bootstrap_models.rData")
 
 ## 1.4 Load custom functions ----
 source("1_code/r_scripts/functions/replace_outliers.R")
 source("1_code/r_scripts/functions/make_spatial_pred.R")
-
 
 # 2. Filter prediction grid ----
 ## 2.1 Keep layers that match model covariates ----
 # Extract covariate names from the first model in
 # bootstrap_models
 model_covariates <- bootstrap_models$models$model_1$var.names
-model_covariates <- brt_3$var.names
 
 # Identify the names in model_covariates that are not in
 # pred_raster
@@ -47,10 +47,10 @@ missing_in_pred_raster <- setdiff(
 
 # Subset the pred_raster to keep only the layers that match
 # the model covariates
-pred_raster <- subset(chunks[[6]], model_covariates)
+pred_raster <- subset(pred_raster, model_covariates)
 
 ## 2.2 Create cropped raster for testing ----
-##  Dummy AOI 
+##  Dummy AOI
 # source("1_code/r_scripts/functions/utils.R")
 # aoi <- create_buffered_area(lon = -113.578, lat = 55.266,
 #                             buffer_dist = 10)
@@ -60,114 +60,123 @@ pred_raster <- subset(chunks[[6]], model_covariates)
 # 3. Clean environment ----
 # Clean environment to avoid memory issues.
 # Remove all objects except pred_raster and bootstrap_models
-rm(list = setdiff(ls(), c("pred_raster", "bootstrap_models")))
+rm(list = setdiff(ls(), c(
+  "pred_raster", "bootstrap_models",
+  "make_spatial_pred",
+  "replace_outliers"
+)))
 
 # Run garbage collection to free up memory
 gc()
 
 # 4. Generate spatial predictions ----
-output_dir <- "3_output/spatial_predictions/s2_vars_noOff"
+output_dir <- "3_output/spatial_predictions/ls_noOff_noYear"
 
 spatial_pred <- make_spatial_pred(
-  bootstrap_models$models[6:100],
+  bootstrap_models$models[0:100],
   pred_raster,
   n_cores = 3, # Reduce the number of cores
   output_dir = output_dir
 )
 
 # 5. Clean Prediction Rasters ----
+## 5.2 Mask water pixels ----
+# Create mask
+water_mask <- ifel(pred_raster$nfiLandCover_mode_500 != 8, 1, NA)
+water_mask <- project(water_mask, crs(spatial_pred[[1]]))
+
+# Apply mask
+spatial_pred <- lapply(spatial_pred, function(raster) {
+  masked_raster <- mask(raster, water_mask)
+  masked_raster <- ifel(is.na(masked_raster), 0, masked_raster)
+  return(masked_raster)
+})
+
+## 5.3 Mask grassland pixels ----
+# Define the specific nsrname values to mask
+nsrname_values <- c(
+  "dry_mixedgrass", "foothills_fescue",
+  "mixedgrass", "northern_fescue"
+)
+
+# Create a mask
+nsrname_mask <- ifel(!(pred_raster$nsrname %in% nsrname_values), 1, NA)
+nsrname_mask <- project(nsrname_mask, crs(spatial_pred[[1]]))
+
+# Apply mask and replace NA values with 0
+spatial_pred <- lapply(spatial_pred, function(raster) {
+  masked_raster <- mask(raster, nsrname_mask)
+  masked_raster <- ifel(is.na(masked_raster), 0, masked_raster)
+  return(masked_raster)
+})
+
 
 ## 5.1 Mask pixels outside of AOI ----
-aoi <- st_transform(aoi, crs(spatial_pred))
-spatial_pred <- mask(spatial_pred, aoi)
+aoi <- st_transform(aoi, crs(spatial_pred$mean_raster))
 
-## 5.2 Mask permanent water pixels ----
-LC <- rast("0_data/manual/predictor/focal_rasters/COPERNICUS_LC.tif")
+spatial_pred <- lapply(spatial_pred, function(raster) {
+  mask(raster, aoi)
+})
 
-# Create a mask using pixels from "LC" where values equal 220
-mask <- ifel(LC$`water-permanent-coverfraction` != 100, 1, NA)
-
-# Mask the "spatial_pred" raster using the created mask
-spatial_pred <- mask(spatial_pred, mask)
 
 ## 5.3 Replace outlier pixels ----
-n_sd_value <- 3
+n_sd_value <- 2
 
 spatial_pred <- lapply(spatial_pred, function(raster) {
   replace_outliers(raster, n_sd = n_sd_value)
 })
 
+## 5.4 Rescale ----
+# reduce size of raster by converting values to 8bit
+scale_to_8bit <- function(raster) {
+  # Scale the values to the 8-bit range (0-255)
+  raster_8bit <- raster * 255
+
+  # Ensure the values are within the 8-bit range
+  raster_8bit[raster_8bit < 0] <- 0
+  raster_8bit[raster_8bit > 255] <- 255
+
+  # Convert the raster to 8-bit unsigned integer using the app function
+  raster_8bit <- app(raster_8bit,
+    fun = function(x) as.integer(round(x))
+  )
+
+  return(raster_8bit)
+}
+
+spatial_pred_rescale_8bit <- lapply(spatial_pred, scale_to_8bit)
+
+# Rescale to 0-1
+rescale_raster <- function(raster) {
+  min_val <- minmax(raster)[1]
+  max_val <- minmax(raster)[2]
+  (raster - min_val) / (max_val - min_val)
+}
+
+spatial_pred_rescale <- lapply(
+  spatial_pred_rescale_8bit,
+  rescale_raster
+)
+
 ## 5.4 Save ----
 writeRaster(spatial_pred$mean_raster,
-            paste0(output_dir, "/mean_raster.tif"),
-            overwrite = TRUE
+  paste0(output_dir, "/mean_raster.tif"),
+  overwrite = TRUE
 )
 
 writeRaster(spatial_pred$sd_raster,
-            paste0(output_dir, "/sd_raster.tif"),
-            overwrite = TRUE
+  paste0(output_dir, "/sd_raster.tif"),
+  overwrite = TRUE
 )
 
+writeRaster(spatial_pred_rescale$mean_raster,
+  paste0(output_dir, "/mean_raster_rescale.tif"),
+  overwrite = TRUE,
+  gdal = c("COMPRESS=LZW") # apply LZW compression
+)
 
-
-
-
-
-###//////////////////////////////////////////////////////
-
-# Testing ----
-
-pred_raster<-rast("0_data/manual/predictor/pred_raster_chunks/pred_raster_chunks5.tif")
-
-# Predict the log-odds (link) values
-p_piwo <- predict(pred_raster, brt_3,
-                  type = "link",
-                  n.trees = brt_3$gbm.call$best.trees,
-                  na.rm = TRUE)
-
-# Define the offset (log of survey intensity of 12)
-offset <- log(20)
-
-# Add the offset to the predicted log-odds values
-p_piwo_with_offset <- p_piwo + offset
-
-# Define the logistic function to convert log-odds to probabilities
-logistic_function <- function(log_odds) {
-  exp(log_odds) / (1 + exp(log_odds))
-}
-
-# Apply the logistic function to the raster to get probabilities
-probability_raster <- app(p_piwo_with_offset, logistic_function)
-
-# Apply the logistic function to the raster to get probabilities
-probability_raster <- app(prediction, logistic_function)
-
-
-
-# Replace outlier values ----
-# Load the raster
-raster <- probability_raster
-
-
-
-
-
-# Save the cleaned raster
-writeRaster(raster_cleaned, "path/to/your/cleaned_raster.tif", overwrite = TRUE)
-#
-
-
-
-# Rescale the probabilities to a 0-1 range ----
-raster <- raster_cleaned
-
-
-raster_stats <- global(raster, c("min", "max"), na.rm = TRUE)
-min_value <- raster_stats$min
-max_value <- raster_stats$max
-
-rescale_function <- function(value) {
-  (value - min_value) / (max_value - min_value)
-}
-
-
+writeRaster(spatial_pred_rescale$sd_raster,
+  paste0(output_dir, "/sd_raster_rescale.tif"),
+  overwrite = TRUE,
+  gdal = c("COMPRESS=LZW") # apply LZW compression
+)
