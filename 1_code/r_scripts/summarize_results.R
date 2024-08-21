@@ -20,12 +20,13 @@ library(gridExtra)
 library(grid)
 
 ## 1.2 Set file path ----
-path <- "3_output/models/s2_noOff_noYear"
+path <- "3_output/models/ls_noOff_noYear"
 
 ## 1.3 Load data ----
 # Bootstrapped models
 load(paste0(path, "/bootstrap_models_stats.rData"))
 load(paste0(path, "/brt_3.rData"))
+load(paste0(path, "/brt_1.rData"))
 
 # 2. Plot variable importance ----
 # Plot the variable importance from the bootstrapped
@@ -177,3 +178,15 @@ ggsave(paste0(path, "/partial_dependence_plots.png"),
 # Print the combined grob
 grid.newpage()
 grid.draw(combined_grob)
+
+# 4. Show dropped variables ----
+# Extract variable names models
+vars_brt_1 <- brt_1$var.names
+vars_brt_3 <- brt_3$var.names
+
+# Find the variables that were dropped
+dropped_vars <- setdiff(vars_brt_1, vars_brt_3)
+
+save(dropped_vars, vars_brt_1, vars_brt_3,
+  file = paste0(path, "/dropped_vars.rData")
+)
