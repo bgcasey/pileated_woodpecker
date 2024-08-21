@@ -59,7 +59,10 @@ make_spatial_pred <- function(models_list, prediction_grid, n_cores,
 
         # Print completion message
         print(paste("Completed and saved raster", i))
-
+        
+        # Remove prediction 
+        rm(prediction)
+        
         # Trigger garbage collection
         gc()
 
