@@ -70,7 +70,7 @@ rm(list = setdiff(ls(), c(
 gc()
 
 # 4. Generate spatial predictions ----
-output_dir <- "3_output/spatial_predictions/ls_noOff_noYear"
+output_dir <- "3_output/models/ls_noOff_noYear/spatial_pred"
 
 spatial_pred <- make_spatial_pred(
   bootstrap_models$models[0:100],
