@@ -36,8 +36,10 @@ var studyArea = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/piwo_searched"),
   pipeline = ee.FeatureCollection(
   "projects/ee-bgcasey-piwomodels/assets/17324_ProjectBoundary_nad83_csrs_z12"),
+  // piwoOcc = ee.Image(
+  // "projects/ee-bgcasey-piwomodels/assets/brt_ls_hlc_terrain_canopy_29_2_p_piwo"),
   piwoOcc = ee.Image(
-  "projects/ee-bgcasey-piwomodels/assets/brt_ls_hlc_terrain_canopy_29_2_p_piwo"),
+  "projects/ee-bgcasey-piwomodels/assets/piwo_mean_raster_rescale"),
   piwoReclass = ee.Image(
   "projects/ee-bgcasey-piwomodels/assets/p_piwo_reclass"),
   piwoABMI = ee.Image(
@@ -73,15 +75,17 @@ studyArea = null;
  */
 
 // Define the color palettes for rasters
-var rTerrain20 = ["00A600", "13AD00", "28B400", "3EBB00", 
-  "56C200", "70C900", "8BD000", "#A7D700", "C6DE00", 
-  "E6E600", "E7D217", "E8C32E", "E9B846", "EBB25E", 
-  "#ECB176", "EDB48E", "EEBCA7", "F0C9C0", "F1DBD9", "F2F2F2"];
+// var rTerrain20 = ["F2F2F2", "F1DBD9", "F0C9C0", "EEBCA7", "EDB48E", 
+//   "#ECB176", "EBB25E", "E9B846", "E8C32E", "E7D217", 
+//   "E6E600", "C6DE00", "#A7D700", "8BD000", "70C900", 
+//   "56C200", "3EBB00", "28B400", "13AD00", "00A600"
+// ]};   
+var rTerrain20 = ['3B4CC0', '6F91F2', 'A9C5FC', 'DDDDDD', 'F6B69B', 'E6745B', 'B40426'];
 
 var rTerrain04 = ["00A600",  "8BD000",  "EBB25E", "F2F2F2"];
 
 // Define the visualization parameters for the occupancy
-var visOccu = {min: 0, max: 1, palette: rTerrain20.reverse()};        
+var visOccu = {min: 0, max: 1, palette: rTerrain20};        
 
 // Create map layers for the occupancy, pipeline route, PIWO cavities, 
 // and searched areas
@@ -96,12 +100,13 @@ var piwoReclassLayer = ui.Map.Layer(piwoReclass, visReclass,
   .setOpacity(.7);  
 
 // Define the visualization parameters for the ABMI map
-var visABMI = {min: 0, max: 100, palette: [
-  "F2F2F2", "F1DBD9", "F0C9C0", "EEBCA7", "EDB48E", 
-  "#ECB176", "EBB25E", "E9B846", "E8C32E", "E7D217", 
-  "E6E600", "C6DE00", "#A7D700", "8BD000", "70C900", 
-  "56C200", "3EBB00", "28B400", "13AD00", "00A600"
-]};   
+// var visABMI = {min: 0, max: 100, palette: [
+//   "F2F2F2", "F1DBD9", "F0C9C0", "EEBCA7", "EDB48E", 
+//   "#ECB176", "EBB25E", "E9B846", "E8C32E", "E7D217", 
+//   "E6E600", "C6DE00", "#A7D700", "8BD000", "70C900", 
+//   "56C200", "3EBB00", "28B400", "13AD00", "00A600"
+// ]};   
+var visABMI = {min: 0, max: 100, palette: ['3B4CC0', '6F91F2', 'A9C5FC', 'DDDDDD', 'F6B69B', 'E6745B', 'B40426']};   
 
 var piwoABMILayer = ui.Map.Layer(piwoABMI, visABMI, 
   "Pileated woodpecker habitat suitability (ABMI)").setShown(1)
@@ -148,7 +153,7 @@ var legendRaster = ui.Panel({
 
 // Add a title to the legend
 var legendTitle = ui.Label({
-  value: 'Probability of Pileated Woodpecker occupancy',
+  value: 'Probability of detecting PIWO vocalization',
   style: {
     fontWeight: 'bold',
     fontSize: '12px',
@@ -374,49 +379,47 @@ Map.add(legendCavities);
 function createStyledCheckbox(label, color, shown, layer) {
   var checkbox;
 
-  // If the layer is the PIWO occurrence layer, reclassified layer, 
-  // or the ABMI layer, create a checkbox that toggles the visibility 
-  // of the layer and the corresponding legend.
-  if (layer === piwoOccLayer || layer === piwoReclassLayer || 
-      layer === piwoABMILayer || layer === piwoCavitiesLyr) {
-    checkbox = ui.Checkbox('', shown);
-    checkbox.onChange(function(checked) {
-      if (checked) {
-        Map.layers().insert(0, layer); // Add layer at the bottom
-        if (layer === piwoOccLayer) {
-          legendRaster.style().set('shown', true);
-        } else if (layer === piwoReclassLayer) {
-          legendReclass.style().set('shown', true);
-        } else if (layer === piwoABMILayer) {
-          legendABMI.style().set('shown', true);
-        } else if (layer === piwoCavitiesLyr) {
-          legendCavities.style().set('shown', true);
-        }
-      } else {
-        Map.remove(layer);
-        if (layer === piwoOccLayer) {
-          legendRaster.style().set('shown', false);
-        } else if (layer === piwoReclassLayer) {
-          legendReclass.style().set('shown', false);
-        } else if (layer === piwoABMILayer) {
-          legendABMI.style().set('shown', false);
-        } else if (layer === piwoCavitiesLyr) {
-          legendCavities.style().set('shown', false);
-        }
+  checkbox = ui.Checkbox('', shown);
+  checkbox.onChange(function(checked) {
+    if (checked) {
+      Map.layers().add(layer);
+
+      // Ensure that when either of the critical layers are shown, they are placed at the bottom
+      if (Map.layers().contains(piwoOccLayer)) {
+        Map.layers().remove(piwoOccLayer);
+        Map.layers().insert(0, piwoOccLayer);
       }
-    });
-  } else {
-    // For other layers, create a checkbox that toggles the visibility
-    // of the layer.
-    checkbox = ui.Checkbox('', shown);
-    checkbox.onChange(function(checked) {
-      if (checked) {
-        Map.layers().insert(0, layer); // Add layer at the bottom
-      } else {
-        Map.remove(layer);
+
+      if (Map.layers().contains(piwoABMILayer)) {
+        Map.layers().remove(piwoABMILayer);
+        Map.layers().insert(0, piwoABMILayer);
       }
-    });
-  }
+
+      // Show the corresponding legend if applicable
+      if (layer === piwoOccLayer) {
+        legendRaster.style().set('shown', true);
+      } else if (layer === piwoABMILayer) {
+        legendABMI.style().set('shown', true);
+      } else if (layer === piwoReclassLayer) {
+        legendReclass.style().set('shown', true);
+      } else if (layer === piwoCavitiesLyr) {
+        legendCavities.style().set('shown', true);
+      }
+    } else {
+      Map.layers().remove(layer);
+
+      // Hide the corresponding legend if applicable
+      if (layer === piwoOccLayer) {
+        legendRaster.style().set('shown', false);
+      } else if (layer === piwoReclassLayer) {
+        legendReclass.style().set('shown', false);
+      } else if (layer === piwoABMILayer) {
+        legendABMI.style().set('shown', false);
+      } else if (layer === piwoCavitiesLyr) {
+        legendCavities.style().set('shown', false);
+      }
+    }
+  });
 
   var icon;
 
@@ -445,7 +448,6 @@ function createStyledCheckbox(label, color, shown, layer) {
 
   return panel;
 }
-
 // Create checkboxes for the pipeline route, PIWO nest cavities, 
 // searched areas, and PIWO map
 var checkboxMaster = ui.Panel({
