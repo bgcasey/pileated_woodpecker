@@ -60,7 +60,8 @@ importance_df <- means %>%
       dplyr::select(-Metric),
     by = "Variable"
   ) %>%
-  slice(-1:-6)
+  slice(-1:-6) %>%
+  arrange(desc(Importance))
 
 ## 2.4 Generate bar plot with error bars ----
 variable_importance_plot <- importance_df %>%
@@ -215,7 +216,6 @@ interaction_df <- interactions$rank.list %>%
     "_mean_500" = "",
     "_mode_500" = ""
   )))
-
 
 # Create a bar plot of the interaction strengths
 interaction_plot <- ggplot(
