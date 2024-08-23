@@ -237,7 +237,35 @@ Export.image.toDrive({
   image: focal_image.toFloat(),
   description: 'focal_image_500',
   folder: "gee_exports",
-  crs: 'EPSG:3348',
+  crs: 'EPSG:3347',
+  scale: 100,
+  region: aoi,
+  maxPixels: 6000000000
+});
+
+
+// Export focal 0 variables to Google Drive
+
+// Function to rename bands by adding "_first_0" to the end
+function renameBands(image) {
+  var bandNames = image.bandNames();
+  var renamedBandNames = bandNames.map(function(bandName) {
+    return ee.String(bandName).cat('_first_0');
+  });
+  return image.rename(renamedBandNames);
+}
+
+// Rename the bands
+var first_image = renameBands(terrain);
+
+// Print to check the new band names
+print(first_image.bandNames());
+
+Export.image.toDrive({ 
+  image: first_image.toFloat(),
+  description: 'focal_image_0',
+  folder: "gee_exports",
+  crs: 'EPSG:3347',
   scale: 100,
   region: aoi,
   maxPixels: 6000000000
