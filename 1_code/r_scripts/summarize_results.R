@@ -294,3 +294,60 @@ plot(r_crop,
 plot(aoi_t, col = adjustcolor("blue", alpha.f = 0.0), add = TRUE)
 
 dev.off()
+
+
+# 7. Study area map ----
+
+## Load natural regions
+nat <- st_read(
+  paste0(
+    "~/Library/CloudStorage/GoogleDrive-bgcasey@ualberta.ca/",
+    "My Drive/3_Resources/data/spatial/Alberta_Landcover_Data/",
+    "GOA Products/Natural_Regions_Subregions_of_Alberta/",
+    "Natural_Regions_Subregions_of_Alberta.shp"
+  )
+)
+
+# Dissolve boundaries
+nat_dissolved <- nat %>%
+  group_by(NRNAME) %>%
+  summarize(geometry = st_union(geometry))
+
+aoi_t <- st_transform(aoi, crs = crs(nat))
+
+## Load point locations
+load("0_data/manual/spatial/ss_xy_3978.rData")
+load("0_data/manual/formatted_for_models/data_for_models.rData")
+
+## Filter points to those used in analyses
+xy <- semi_join(ss_xy_3978, data_brt)
+
+# Transform xy to match the CRS of nat
+xy_transformed <- st_transform(xy, st_crs(nat))
+
+# Create the plot
+study_aoi <- ggplot() +
+  geom_sf(data = nat_dissolved, aes(fill = NRNAME), color = NA) +
+  geom_sf(data = aoi_t, fill = NA, color = "black") +
+  geom_sf(
+    data = xy_transformed, aes(color = "Sample Points"),
+    size = 0.5
+  ) +
+  scale_fill_brewer(palette = "Set3", name = "Natural Region") +
+  scale_color_manual(values = "black", name = "Legend") +
+  theme_minimal() +
+  guides(
+    fill = guide_legend(ncol = 1),
+    color = guide_legend(override.aes = list(size = 4))
+  ) +
+  theme(
+    legend.spacing = unit(0.5, "cm"),
+    legend.spacing.y = unit(0.5, "cm"),
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+
+ggsave("3_output/maps/aoi.png",
+  plot = study_aoi, width = 6,
+  height = 7, dpi = 300
+)
