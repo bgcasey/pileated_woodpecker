@@ -109,30 +109,51 @@ print(variable_importance_plot)
 # a grid with a common y-axis label.
 
 ## 3.1 Extract variable importance ----
-model <- brt_3
+top_variables <- head(importance_df$Variable, 6)
 
-importance_df_sorted <- importance_df %>%
-  arrange(desc(Importance)) %>%
-  head()
+## 3.2 Generate partial dependence data for all bootstrapped models ----
+partial_dependence_data <- list()
 
-top_variables <- head(importance_df_sorted$Variable, 6)
+for (var in top_variables) {
+  var_data <- list()
+  
+  for (i in 1:length(bootstrap_models$models)) {
+    temp_plot <- plot.gbm(bootstrap_models$models[[i]],
+                          i.var = var, return.grid = TRUE,
+                          smooth = TRUE, type = "response"
+    )
+    
+    temp_plot$model <- i
+    var_data[[i]] <- temp_plot
+  }
+  
+  combined_var_data <- bind_rows(var_data)
+  partial_dependence_data[[var]] <- combined_var_data
+}
 
-## 3.2 Generate partial dependence plots ----
+## 3.3 Calculate mean and standard error for each variable ----
 plot_list <- list()
 
 for (var in top_variables) {
-  temp_plot <- plot.gbm(model,
-    i.var = var, return.grid = TRUE,
-    smooth = TRUE, type = "response"
-  )
-
-  if (is.factor(temp_plot[[1]]) || is.character(temp_plot[[1]])) {
-    temp_plot[[1]] <- as.factor(temp_plot[[1]])
-    p <- ggplot(temp_plot, aes_string(
-      x = names(temp_plot)[1],
-      y = "y"
-    )) +
+  var_data <- partial_dependence_data[[var]]
+  
+  summary_data <- var_data %>%
+    group_by_at(names(var_data)[1]) %>%
+    summarise(
+      mean_y = mean(y),
+      sd_y = sd(y)
+    )
+  
+  x_var <- sym(names(summary_data)[1])
+  
+  if (is.factor(summary_data[[1]]) || is.character(summary_data[[1]])) {
+    summary_data[[1]] <- as.factor(summary_data[[1]])
+    p <- ggplot(summary_data, aes(!!x_var, mean_y)) +
       geom_bar(stat = "identity") +
+      geom_errorbar(aes(
+        ymin = mean_y - sd_y,
+        ymax = mean_y + sd_y
+      ), width = 0.2) +
       labs(
         x = str_replace_all(var, c(
           "ls_" = "", "s2_" = "",
@@ -147,11 +168,12 @@ for (var in top_variables) {
       ) +
       theme(axis.text.x = element_text(angle = 90, hjust = 1))
   } else {
-    p <- ggplot(temp_plot, aes_string(
-      x = names(temp_plot)[1],
-      y = "y"
-    )) +
+    p <- ggplot(summary_data, aes(!!x_var, mean_y)) +
       geom_line() +
+      geom_ribbon(aes(
+        ymin = mean_y - sd_y,
+        ymax = mean_y + sd_y
+      ), alpha = 0.2) +
       labs(
         x = str_replace_all(var, c(
           "ls_" = "", "s2_" = "",
@@ -165,9 +187,27 @@ for (var in top_variables) {
         panel.grid.minor = element_blank()
       )
   }
-
+  
   plot_list[[var]] <- p
 }
+
+## 3.4 Arrange plots in a grid ----
+grid_plots <- do.call(grid.arrange, c(plot_list, ncol = 2))
+
+## 3.5 Create and save combined grob ----
+combined_grob <- arrangeGrob(grid_plots,
+                             left = textGrob("Occupancy Probability",
+                                             rot = 90,
+                                             gp = gpar(fontsize = 15)
+                             )
+)
+ggsave(paste0(path, "/plots/partial_dependence_plots.png"),
+       plot = combined_grob, width = 12, height = 9
+)
+
+# Print the combined grob
+grid.newpage()
+grid.draw(combined_grob)
 
 ## 3.3 Arrange plots in a grid ----
 grid_plots <- do.call(grid.arrange, c(plot_list, ncol = 2))
