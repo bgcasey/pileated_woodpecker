@@ -29,6 +29,7 @@ path <- "3_output/models/s2_noOff_noYear"
 load(paste0(path, "/bootstrap_models_stats.rData"))
 load(paste0(path, "/brt_3.rData"))
 load(paste0(path, "/brt_1.rData"))
+load(paste0(path, "/bootstrap_models.rData"))
 pred_raster_mean <- rast(paste0(
   path,
   "/spatial_pred/mean_raster_rescale.tif"
@@ -199,37 +200,65 @@ save(dropped_vars, vars_brt_1, vars_brt_3,
 )
 
 # 5. Interactions ----
-# Detect the most important interactions
-interactions <- gbm.interactions(brt_3)
+# Initialize an empty list to store interaction data frames
+interaction_list <- list()
 
-# View the ranked list of interactions
-interaction_df <- interactions$rank.list %>%
-  mutate(var1.names = str_replace_all(var1.names, c(
-    "ls_" = "",
-    "s2_" = "",
-    "_mean_500" = "",
-    "_mode_500" = ""
-  ))) %>%
-  mutate(var2.names = str_replace_all(var2.names, c(
-    "ls_" = "",
-    "s2_" = "",
-    "_mean_500" = "",
-    "_mode_500" = ""
-  )))
+# Loop through each bootstrapped model and extract interaction 
+# strengths
+for (i in 1:length(bootstrap_models)) {
+  interactions <- gbm.interactions(bootstrap_models[[i]])
+  
+  interaction_df <- interactions$rank.list %>%
+    mutate(var1.names = str_replace_all(
+      var1.names, c(
+        "ls_" = "",
+        "s2_" = "",
+        "_mean_500" = "",
+        "_mode_500" = ""
+      )
+    )) %>%
+    mutate(var2.names = str_replace_all(
+      var2.names, c(
+        "ls_" = "",
+        "s2_" = "",
+        "_mean_500" = "",
+        "_mode_500" = ""
+      )
+    )) %>%
+    mutate(model = i) # Add a column to identify the model
+  
+  interaction_list[[i]] <- interaction_df
+}
 
-# Create a bar plot of the interaction strengths
+# Combine all interaction data frames into one
+all_interactions <- bind_rows(interaction_list)
+
+# Calculate mean and standard error for each variable pair
+interaction_summary <- all_interactions %>%
+  group_by(var1.names, var2.names) %>%
+  summarise(
+    mean_int.size = mean(int.size),
+    se_int.size = sd(int.size) / sqrt(n())
+  ) %>%
+  ungroup()
+
+# Create a bar plot with error bars
 interaction_plot <- ggplot(
-  interaction_df,
+  interaction_summary,
   aes(x = reorder(
     paste(
       var1.names,
       "and",
       var2.names
     ),
-    int.size
-  ), y = int.size)
+    mean_int.size
+  ), y = mean_int.size)
 ) +
   geom_bar(stat = "identity", fill = "steelblue") +
+  geom_errorbar(aes(
+    ymin = mean_int.size - se_int.size,
+    ymax = mean_int.size + se_int.size
+  ), width = 0.2) +
   coord_flip() + # Flip the coordinates for readability
   theme_minimal(base_size = 14) +
   labs(
@@ -247,9 +276,10 @@ interaction_plot <- ggplot(
     axis.line = element_line(color = "black") # Add axis lines
   )
 
+# Save the plot
 ggsave(paste0(path, "/plots/interaction_plot.png"),
-  plot = interaction_plot, width = 10, height = 8,
-  dpi = 300
+       plot = interaction_plot, width = 10, height = 8,
+       dpi = 300
 )
 
 # 6. Plot map ----
@@ -320,6 +350,9 @@ load("0_data/manual/spatial/ss_xy_3978.rData")
 load("0_data/manual/formatted_for_models/data_for_models.rData")
 
 ## Filter points to those used in analyses
+data_brt <- data_brt %>%
+  filter(nrname != "grassland")
+
 xy <- semi_join(ss_xy_3978, data_brt)
 
 # Transform xy to match the CRS of nat
@@ -330,7 +363,7 @@ study_aoi <- ggplot() +
   geom_sf(data = nat_dissolved, aes(fill = NRNAME), color = NA) +
   geom_sf(data = aoi_t, fill = NA, color = "black") +
   geom_sf(
-    data = xy_transformed, aes(color = "Sample Points"),
+    data = xy_transformed, aes(color = "Point Counts"),
     size = 0.5
   ) +
   scale_fill_brewer(palette = "Set3", name = "Natural Region") +
