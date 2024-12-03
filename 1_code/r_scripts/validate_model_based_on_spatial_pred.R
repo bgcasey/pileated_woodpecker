@@ -55,6 +55,8 @@ cavities <- st_read("3_output/shapefiles/cavities_all_20241128.shp") %>%
 cavities_all <- cavities
 cavities_piwo <- cavities %>%
   filter(d_class == 4)
+cavities_piwo_3_4  <- cavities %>%
+  filter(d_class == 4 |d_class == 3 )
 
 search_areas <- st_read("3_output/shapefiles/piwo_searched_20241119.shp") %>%
   st_transform(crs = 3978)
@@ -107,10 +109,12 @@ validate <- function(cavities_data, dataset_name) {
 # Compute metrics for all cavities and PIWO cavities
 validation_metrics_all <- validate(cavities_all, "cavities_all")
 validation_metrics_piwo <- validate(cavities_piwo, "cavities_piwo")
+validation_metrics_piwo_3_4 <- validate(cavities_piwo_3_4, "cavities_piwo_3_4")
 
 # Combine metrics
 validation_metrics_combined <- rbind(validation_metrics_all, 
-                                     validation_metrics_piwo)
+                                     validation_metrics_piwo,
+                                     validation_metrics_piwo_3_4)
 
 ## 2.3 Save metrics ----
 # Save validation metrics to CSV
@@ -137,7 +141,8 @@ nat_masked <- mask(nat, non_grassland_mask, maskvalues = FALSE)
 # Prepare datasets for validation
 datasets <- list(
   cavities_all = cavities_all,
-  cavities_piwo = cavities_piwo
+  cavities_piwo = cavities_piwo,
+  cavities_piwo_3_4 = cavities_piwo_3_4
 )
 
 # Add predicted probabilities to each dataset
